@@ -1,8 +1,0 @@
-@echo off
-docker-compose up -d --build
-
-echo Waiting for services to start...
-timeout /t 30 /nobreak
-
-echo Opening browser...
-start http://localhost:3000
