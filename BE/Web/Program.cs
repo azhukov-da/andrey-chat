@@ -1,56 +1,60 @@
+using Application;
+using Application.Abstractions;
 using Domain.Entities;
-using Infrastructure.Data;
+using Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Web.Configuration;
+using Web.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure(builder.Configuration);
 
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection("Cors"));
+var corsOptions = builder.Configuration.GetSection("Cors").Get<CorsOptions>() ?? new CorsOptions();
+
+builder.Services.AddCors(options =>
 {
-    // Password settings
-    options.Password.RequireDigit = true;
-    options.Password.RequiredLength = 6;
-    options.Password.RequireNonAlphanumeric = false;
-    options.Password.RequireUppercase = true;
-    options.Password.RequireLowercase = false;
-
-    // Lockout settings
-    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
-    options.Lockout.MaxFailedAccessAttempts = 5;
-
-    // User settings
-    options.User.RequireUniqueEmail = true;
-})
-.AddEntityFrameworkStores<ApplicationDbContext>()
-.AddDefaultTokenProviders();
-
-builder.Services.ConfigureApplicationCookie(options =>
-{
-    options.Cookie.HttpOnly = true;
-    options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
-    options.LoginPath = "/Account/Login";
-    options.AccessDeniedPath = "/Account/AccessDenied";
-    options.SlidingExpiration = true;
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins(corsOptions.AllowedOrigins)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
 });
+
+builder.Services.AddIdentityApiEndpoints<ApplicationUser>()
+    .AddEntityFrameworkStores<Infrastructure.Data.ApplicationDbContext>();
+
+//builder.Services.AddAuthentication().AddBearerToken(IdentityConstants.BearerScheme);
+
+builder.Services.AddAuthorizationBuilder();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddSignalR();
+
+builder.Services.AddSingleton<IChatNotifier, ChatNotifier>();
+
+builder.Services.AddProblemDetails();
+
 var app = builder.Build();
 
-// Apply migrations on startup
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try
     {
-        var context = services.GetRequiredService<ApplicationDbContext>();
-        await context.Database.MigrateAsync();
+        var context = services.GetRequiredService<IApplicationDbContext>();
+        if (context is Infrastructure.Data.ApplicationDbContext dbContext)
+        {
+            await dbContext.Database.MigrateAsync();
+        }
     }
     catch (Exception ex)
     {
@@ -59,18 +63,21 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.UseCors();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapIdentityApi<ApplicationUser>().WithTags("Auth");
+app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();
+
+

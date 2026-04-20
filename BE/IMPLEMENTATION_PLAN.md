@@ -37,7 +37,7 @@ Replace:
 - Existing initial migration — **delete** and regenerate against Postgres covering Identity + all chat tables.
 
 Add packages:
-- `Application`: `MediatR`, `FluentValidation`, `FluentValidation.DependencyInjectionExtensions`.
+- `Application`: `FluentValidation`, `FluentValidation.DependencyInjectionExtensions`.
 - `Infrastructure`: `Npgsql.EntityFrameworkCore.PostgreSQL`.
 - `Web`: `Microsoft.AspNetCore.SignalR` (built-in but confirm reference).
 
