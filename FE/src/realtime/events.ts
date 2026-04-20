@@ -38,8 +38,8 @@ interface RoomDeletedPayload {
 type CursorPaged<T> = { items: T[]; nextCursor?: string | null }
 type Pages<T> = { pages: CursorPaged<T>[] }
 
-export function registerHubEvents(hub: HubConnection, queryClient: QueryClient, navigate: (path: string) => void) {
-  hub.on('MessageReceived', (message: Message) => {
+export function registerHubEvents(hub: HubConnection, queryClient: QueryClient, navigate: (path: string) => void): () => void {
+  const onMessageReceived = (message: Message) => {
     const roomId = message.roomId
     queryClient.setQueryData<Pages<Message>>(['messages', roomId], (old) => {
       if (!old) return old
@@ -52,9 +52,9 @@ export function registerHubEvents(hub: HubConnection, queryClient: QueryClient, 
     if (activeRoom !== roomId) {
       useUnreadStore.getState().increment(roomId)
     }
-  })
+  }
 
-  hub.on('MessageEdited', (payload: MessageEditedPayload) => {
+  const onMessageEdited = (payload: MessageEditedPayload) => {
     queryClient.setQueriesData<Pages<Message>>({ queryKey: ['messages'] }, (old) => {
       if (!old) return old
       return {
@@ -69,9 +69,9 @@ export function registerHubEvents(hub: HubConnection, queryClient: QueryClient, 
         })),
       }
     })
-  })
+  }
 
-  hub.on('MessageDeleted', (payload: MessageDeletedPayload) => {
+  const onMessageDeleted = (payload: MessageDeletedPayload) => {
     queryClient.setQueriesData<Pages<Message>>({ queryKey: ['messages'] }, (old) => {
       if (!old) return old
       return {
@@ -84,31 +84,51 @@ export function registerHubEvents(hub: HubConnection, queryClient: QueryClient, 
         })),
       }
     })
-  })
+  }
 
-  hub.on('PresenceChanged', (payload: PresenceChangedPayload) => {
+  const onPresenceChanged = (payload: PresenceChangedPayload) => {
     const status = payload.status.toLowerCase() as 'online' | 'afk' | 'offline'
     usePresenceStore.getState().update(payload.userId, status)
-  })
+  }
 
-  hub.on('RoomMembershipChanged', (payload: RoomMembershipChangedPayload) => {
+  const onRoomMembershipChanged = (payload: RoomMembershipChangedPayload) => {
     void queryClient.invalidateQueries({ queryKey: ['rooms', 'mine'] })
     void queryClient.invalidateQueries({ queryKey: ['rooms', payload.roomId, 'members'] })
-  })
+  }
 
-  hub.on('RoomDeleted', (payload: RoomDeletedPayload) => {
+  const onRoomDeleted = (payload: RoomDeletedPayload) => {
     void queryClient.invalidateQueries({ queryKey: ['rooms'] })
     const activeRoom = useUiStore.getState().activeRoomId
     if (activeRoom === payload.roomId) {
       navigate('/rooms')
     }
-  })
+  }
 
-  hub.on('FriendRequestReceived', () => {
+  const onFriendRequestReceived = () => {
     void queryClient.invalidateQueries({ queryKey: ['friends'] })
-  })
+  }
 
-  hub.on('UnreadUpdated', (payload: UnreadUpdatedPayload) => {
+  const onUnreadUpdated = (payload: UnreadUpdatedPayload) => {
     useUnreadStore.getState().set(payload.roomId, payload.unreadCount)
-  })
+  }
+
+  hub.on('MessageReceived', onMessageReceived)
+  hub.on('MessageEdited', onMessageEdited)
+  hub.on('MessageDeleted', onMessageDeleted)
+  hub.on('PresenceChanged', onPresenceChanged)
+  hub.on('RoomMembershipChanged', onRoomMembershipChanged)
+  hub.on('RoomDeleted', onRoomDeleted)
+  hub.on('FriendRequestReceived', onFriendRequestReceived)
+  hub.on('UnreadUpdated', onUnreadUpdated)
+
+  return () => {
+    hub.off('MessageReceived', onMessageReceived)
+    hub.off('MessageEdited', onMessageEdited)
+    hub.off('MessageDeleted', onMessageDeleted)
+    hub.off('PresenceChanged', onPresenceChanged)
+    hub.off('RoomMembershipChanged', onRoomMembershipChanged)
+    hub.off('RoomDeleted', onRoomDeleted)
+    hub.off('FriendRequestReceived', onFriendRequestReceived)
+    hub.off('UnreadUpdated', onUnreadUpdated)
+  }
 }

@@ -18,7 +18,7 @@ export function useSignalR() {
     if (!me) return
 
     const hub = getHubConnection()
-    registerHubEvents(hub, queryClient, navigate)
+    const unregisterEvents = registerHubEvents(hub, queryClient, navigate)
 
     startAfkDetector()
     initPresenceLeader(
@@ -32,10 +32,14 @@ export function useSignalR() {
     window.addEventListener('auth/logout', handleLogout)
 
     return () => {
+      unregisterEvents()
       stopPresencePing()
       stopAfkDetector()
       void stopHub()
       window.removeEventListener('auth/logout', handleLogout)
     }
-  }, [me, queryClient, navigate])
+  // queryClient and navigate are stable refs — excluded intentionally to prevent
+  // hub teardown/restart on every navigation
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [me])
 }
