@@ -9,8 +9,13 @@ import RightSidebar from './RightSidebar'
 export default function AppShell() {
   const { data: me, isError, isLoading } = useMe()
   const accessToken = useAuthStore((s) => s.accessToken)
+  const setMe = useAuthStore((s) => s.setMe)
   const navigate = useNavigate()
   useSignalR()
+
+  useEffect(() => {
+    if (me) setMe(me)
+  }, [me, setMe])
 
   useEffect(() => {
     if (!isLoading && (isError || !accessToken)) {
