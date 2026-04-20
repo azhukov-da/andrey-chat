@@ -101,8 +101,9 @@ export const CursorPagedSchema = <T extends z.ZodTypeAny>(item: T) =>
   z.object({
     items: z.array(item),
     nextCursor: z.string().uuid().nullable().optional(),
+    hasMore: z.boolean(),
   })
-export type CursorPaged<T> = { items: T[]; nextCursor?: string | null }
+export type CursorPaged<T> = { items: T[]; nextCursor?: string | null; hasMore: boolean }
 
 // Form schemas
 export const RegisterFormSchema = z

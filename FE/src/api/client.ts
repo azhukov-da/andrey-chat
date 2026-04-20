@@ -64,7 +64,7 @@ export async function apiJson<T>(input: string, init: RequestInit = {}): Promise
     let errorText = res.statusText
     try {
       const body = (await res.json()) as { title?: string; detail?: string; errors?: Record<string, string[]> }
-      errorText = body.title ?? body.detail ?? Object.values(body.errors ?? {}).flat().join(', ') ?? errorText
+      errorText = (body.title ?? body.detail ?? Object.values(body.errors ?? {}).flat().join(', ')) || errorText
     } catch { /* ignore */ }
     throw new ApiError(res.status, errorText)
   }

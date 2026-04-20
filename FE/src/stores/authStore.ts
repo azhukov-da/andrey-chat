@@ -20,11 +20,13 @@ function loadFromStorage(): { accessToken: string | null; refreshToken: string |
   return { accessToken, refreshToken, keepSignedIn }
 }
 
+const initialStorage = loadFromStorage()
+
 export const useAuthStore = create<AuthState>()((set, get) => ({
-  accessToken: null,
-  refreshToken: null,
+  accessToken: initialStorage.accessToken,
+  refreshToken: initialStorage.refreshToken,
   me: null,
-  keepSignedIn: false,
+  keepSignedIn: initialStorage.keepSignedIn,
 
   setTokens(accessToken, refreshToken) {
     sessionStorage.setItem('accessToken', accessToken)

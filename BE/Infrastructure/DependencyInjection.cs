@@ -35,6 +35,10 @@ public static class DependencyInjection
             options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
             options.Lockout.MaxFailedAccessAttempts = 5;
             options.Lockout.AllowedForNewUsers = true;
+            
+            // Disable 2FA tokens
+            options.Tokens.AuthenticatorTokenProvider = string.Empty;
+            options.Tokens.ChangePhoneNumberTokenProvider = string.Empty;
         })
         .AddEntityFrameworkStores<ApplicationDbContext>();
 
@@ -59,5 +63,6 @@ public static class DependencyInjection
         return services;
     }
 }
+
 
 

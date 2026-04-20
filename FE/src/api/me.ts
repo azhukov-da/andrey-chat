@@ -1,4 +1,4 @@
-import { apiJson, apiFetch } from './client'
+import { apiJson } from './client'
 import type { UserProfile } from '@/types'
 
 export function getMe() {
@@ -13,5 +13,5 @@ export function updateDisplayName(displayName: string) {
 }
 
 export function deleteAccount() {
-  return apiFetch('/api/Me', { method: 'DELETE' })
+  return apiJson<void>('/api/Me', { method: 'DELETE' })
 }

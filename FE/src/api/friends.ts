@@ -1,4 +1,4 @@
-import { apiJson, apiFetch } from './client'
+import { apiJson } from './client'
 import type { Friend } from '@/types'
 
 export function getFriends() {
@@ -21,5 +21,5 @@ export function blockUser(userId: string) {
 }
 
 export function unblockUser(userId: string) {
-  return apiFetch(`/api/Friends/blocks/${userId}`, { method: 'DELETE' })
+  return apiJson<void>(`/api/Friends/blocks/${userId}`, { method: 'DELETE' })
 }

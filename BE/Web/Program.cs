@@ -35,7 +35,16 @@ builder.Services.AddAuthorizationBuilder();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.DocInclusionPredicate((docName, apiDesc) =>
+    {
+        // Hide 2FA-related endpoints
+        var routeTemplate = apiDesc.RelativePath ?? string.Empty;
+        return !routeTemplate.Contains("manage/2fa") && 
+               !routeTemplate.Contains("manage/info");
+    });
+});
 
 builder.Services.AddSignalR();
 
@@ -79,5 +88,6 @@ app.MapIdentityApi<ApplicationUser>().WithTags("Auth");
 app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();
+
 
 

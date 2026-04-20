@@ -1,20 +1,22 @@
 import { useEffect } from 'react'
 import { Outlet, useNavigate } from 'react-router'
 import { useMe } from '@/hooks/useAuth'
+import { useAuthStore } from '@/stores/authStore'
 import { useSignalR } from '@/hooks/useSignalR'
 import TopNav from './TopNav'
 import RightSidebar from './RightSidebar'
 
 export default function AppShell() {
   const { data: me, isError, isLoading } = useMe()
+  const accessToken = useAuthStore((s) => s.accessToken)
   const navigate = useNavigate()
   useSignalR()
 
   useEffect(() => {
-    if (!isLoading && isError) {
+    if (!isLoading && (isError || !accessToken)) {
       navigate('/login')
     }
-  }, [isLoading, isError, navigate])
+  }, [isLoading, isError, accessToken, navigate])
 
   if (isLoading) {
     return (

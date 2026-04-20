@@ -10,7 +10,7 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
     let errorText = res.statusText
     try {
       const data = (await res.json()) as { title?: string; detail?: string; errors?: Record<string, string[]> }
-      errorText = data.title ?? data.detail ?? Object.values(data.errors ?? {}).flat().join(', ') ?? errorText
+      errorText = (data.title ?? data.detail ?? Object.values(data.errors ?? {}).flat().join(', ')) || errorText
     } catch { /* ignore */ }
     throw new Error(errorText)
   }
