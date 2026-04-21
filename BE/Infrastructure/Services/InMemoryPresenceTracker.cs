@@ -1,4 +1,5 @@
 using Application.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Concurrent;
 
 namespace Infrastructure.Services;
@@ -13,13 +14,13 @@ public class ConnectionInfo
 public class InMemoryPresenceTracker : IPresenceTracker
 {
     private readonly ConcurrentDictionary<string, ConnectionInfo> _connections = new();
-    private readonly IChatNotifier _notifier;
+    private readonly IServiceProvider _serviceProvider;
     private readonly TimeSpan _onlineThreshold = TimeSpan.FromSeconds(60);
     private readonly TimeSpan _afkThreshold = TimeSpan.FromSeconds(60);
 
-    public InMemoryPresenceTracker(IChatNotifier notifier)
+    public InMemoryPresenceTracker(IServiceProvider serviceProvider)
     {
-        _notifier = notifier;
+        _serviceProvider = serviceProvider;
     }
 
     public Task UserConnectedAsync(string connectionId, string userId)
@@ -87,9 +88,19 @@ public class InMemoryPresenceTracker : IPresenceTracker
         return result;
     }
 
+    public Task<IReadOnlyList<string>> GetConnectionIdsAsync(string userId)
+    {
+        var ids = _connections
+            .Where(kv => kv.Value.UserId == userId)
+            .Select(kv => kv.Key)
+            .ToList();
+        return Task.FromResult<IReadOnlyList<string>>(ids);
+    }
+
     private async Task NotifyPresenceChangedAsync(string userId)
     {
         var status = await GetUserStatusAsync(userId);
-        await _notifier.PresenceChangedAsync(userId, status);
+        var notifier = _serviceProvider.GetRequiredService<IChatNotifier>();
+        await notifier.PresenceChangedAsync(userId, status);
     }
 }

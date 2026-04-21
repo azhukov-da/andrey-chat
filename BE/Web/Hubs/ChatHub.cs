@@ -1,7 +1,6 @@
 using Application.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Web.Hubs;
 
@@ -10,19 +9,19 @@ public class ChatHub : Hub
 {
     private readonly IMessageService _messageService;
     private readonly IPresenceTracker _presenceTracker;
-    private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IChatNotifier _notifier;
 
     public ChatHub(
         IMessageService messageService,
         IPresenceTracker presenceTracker,
-        IApplicationDbContext context,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        IChatNotifier notifier)
     {
         _messageService = messageService;
         _presenceTracker = presenceTracker;
-        _context = context;
         _currentUser = currentUser;
+        _notifier = notifier;
     }
 
     public override async Task OnConnectedAsync()
@@ -31,18 +30,7 @@ public class ChatHub : Hub
         if (userId != null)
         {
             await _presenceTracker.UserConnectedAsync(Context.ConnectionId, userId);
-
-            await Groups.AddToGroupAsync(Context.ConnectionId, $"user:{userId}");
-
-            var userRooms = await _context.RoomMemberships
-                .Where(m => m.UserId == userId)
-                .Select(m => m.RoomId)
-                .ToListAsync();
-
-            foreach (var roomId in userRooms)
-            {
-                await Groups.AddToGroupAsync(Context.ConnectionId, $"room:{roomId}");
-            }
+            await _notifier.EnrollUserGroupsAsync(Context.ConnectionId, userId);
         }
 
         await base.OnConnectedAsync();

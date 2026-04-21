@@ -14,4 +14,5 @@ public interface IPresenceTracker
     Task UpdateActivityAsync(string connectionId, bool isActive);
     Task<PresenceStatus> GetUserStatusAsync(string userId);
     Task<Dictionary<string, PresenceStatus>> GetUsersStatusAsync(IEnumerable<string> userIds);
+    Task<IReadOnlyList<string>> GetConnectionIdsAsync(string userId);
 }

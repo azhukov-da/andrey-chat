@@ -11,11 +11,13 @@ public class DirectChatService : IDirectChatService
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IChatNotifier _notifier;
 
-    public DirectChatService(IApplicationDbContext context, ICurrentUser currentUser)
+    public DirectChatService(IApplicationDbContext context, ICurrentUser currentUser, IChatNotifier notifier)
     {
         _context = context;
         _currentUser = currentUser;
+        _notifier = notifier;
     }
 
     public async Task<Result<RoomDto>> OpenOrCreateAsync(string username)
@@ -95,6 +97,9 @@ public class DirectChatService : IDirectChatService
         _context.RoomMemberships.Add(membership2);
 
         await _context.SaveChangesAsync();
+
+        await _notifier.AddUserToRoomGroupAsync(_currentUser.UserId, room.Id);
+        await _notifier.AddUserToRoomGroupAsync(otherUser.Id, room.Id);
 
         return new RoomDto
         {

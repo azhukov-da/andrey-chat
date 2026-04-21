@@ -26,7 +26,7 @@ export function useSignalR() {
       () => stopPresencePing()
     )
 
-    void startHub().then(() => startPresencePing())
+    void startHub().then(() => startPresencePing()).catch(() => {})
 
     const handleLogout = () => { void stopHub() }
     window.addEventListener('auth/logout', handleLogout)

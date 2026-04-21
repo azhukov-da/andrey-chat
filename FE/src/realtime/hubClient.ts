@@ -24,7 +24,9 @@ export async function startHub(): Promise<void> {
 }
 
 export async function stopHub(): Promise<void> {
-  if (connection && connection.state !== signalR.HubConnectionState.Disconnected) {
-    await connection.stop()
+  const conn = connection
+  connection = null
+  if (conn && conn.state !== signalR.HubConnectionState.Disconnected) {
+    await conn.stop()
   }
 }

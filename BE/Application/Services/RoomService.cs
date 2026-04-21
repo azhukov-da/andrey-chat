@@ -217,6 +217,7 @@ public class RoomService : IRoomService
         _context.RoomMemberships.Add(membership);
         await _context.SaveChangesAsync();
 
+        await _notifier.AddUserToRoomGroupAsync(_currentUser.UserId, roomId);
         await _notifier.RoomMembershipChangedAsync(roomId, _currentUser.UserId, "joined");
 
         return Result.Success();

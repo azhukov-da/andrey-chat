@@ -10,4 +10,6 @@ public interface IChatNotifier
     Task UnreadUpdatedAsync(string userId, Guid roomId, int unreadCount, CancellationToken cancellationToken = default);
     Task FriendRequestReceivedAsync(string userId, object friendRequestDto, CancellationToken cancellationToken = default);
     Task RoomDeletedAsync(Guid roomId, CancellationToken cancellationToken = default);
+    Task AddUserToRoomGroupAsync(string userId, Guid roomId, CancellationToken cancellationToken = default);
+    Task EnrollUserGroupsAsync(string connectionId, string userId, CancellationToken cancellationToken = default);
 }

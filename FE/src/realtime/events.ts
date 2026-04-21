@@ -43,6 +43,7 @@ export function registerHubEvents(hub: HubConnection, queryClient: QueryClient, 
     const roomId = message.roomId
     queryClient.setQueryData<Pages<Message>>(['messages', roomId], (old) => {
       if (!old) return old
+      if (old.pages.some((page) => page.items.some((m) => m.id === message.id))) return old
       const [first, ...rest] = old.pages
       if (!first) return old
       return { ...old, pages: [{ ...first, items: [message, ...first.items] }, ...rest] }

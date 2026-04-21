@@ -27,11 +27,11 @@ export default function MessageComposer({ roomId }: Props) {
     onSuccess: (msg) => {
       queryClient.setQueryData<Pages>(['messages', roomId], (old) => {
         if (!old) return old
+        if (old.pages.some((page) => page.items.some((m) => m.id === msg.id))) return old
         const [first, ...rest] = old.pages
         if (!first) return old
         return { ...old, pages: [{ ...first, items: [msg, ...first.items] }, ...rest] }
       })
-      void queryClient.invalidateQueries({ queryKey: ['messages', roomId] })
     },
   })
 
@@ -46,10 +46,7 @@ export default function MessageComposer({ roomId }: Props) {
     setText('')
     setReplyTo(roomId, null)
 
-    try {
-      const hub = getHubConnection()
-      void hub.invoke('StopTyping', roomId)
-    } catch { /* ignore */ }
+    getHubConnection().invoke('StopTyping', roomId).catch(() => {})
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -58,10 +55,7 @@ export default function MessageComposer({ roomId }: Props) {
       submit()
     }
     if (text.length > 0) {
-      try {
-        const hub = getHubConnection()
-        void hub.invoke('StartTyping', roomId)
-      } catch { /* ignore */ }
+      getHubConnection().invoke('StartTyping', roomId).catch(() => {})
     }
   }
 

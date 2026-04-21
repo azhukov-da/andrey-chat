@@ -2,8 +2,10 @@ using Application;
 using Application.Abstractions;
 using Domain.Entities;
 using Infrastructure;
+using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Web.Configuration;
 using Web.Hubs;
 
@@ -45,6 +47,9 @@ builder.Services.AddSwaggerGen(options =>
                !routeTemplate.Contains("manage/info");
     });
 });
+
+builder.Services.AddSingleton<IPostConfigureOptions<BearerTokenOptions>>(
+    new SignalRBearerTokenOptions(IdentityConstants.BearerScheme));
 
 builder.Services.AddSignalR();
 
