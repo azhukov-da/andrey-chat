@@ -30,14 +30,18 @@ PROCEDURE:
 
 3. For EACH requirement, verify it by:
    a. Re-reading its exact wording from the requirements document.
-   b. Inspecting backend (C#/.NET) and frontend (React/TS) source code with
-      Grep / Glob / Read to confirm the feature is actually implemented.
-   c. Driving the live site with Playwright:
+   b. Driving the live site with Playwright FIRST:
       - Sign in with the test user credentials, OR register new users when
         the scenario requires additional participants.
-      - Create chats / send messages as needed.
+      - Create chats / send messages as needed to exercise the requirement end-to-end.
       - Stay within the global budgets (max users and max chats shared across
         ALL requirements and wireframes).
+      - Record what is observable: which UI controls appear, what behaviour occurs,
+        what errors (if any) surface.
+   c. If the Playwright run is inconclusive (feature not reachable, ambiguous result,
+      or status is `PartiallyImplemented`), THEN inspect backend (C#/.NET) and
+      frontend (React/TS) source code with Grep / Glob / Read to determine whether
+      the feature is coded but broken, or simply absent.
    d. Assigning a status:
       - `Implemented`          — fully present and works end-to-end.
       - `PartiallyImplemented` — exists but has gaps, bugs, or missing sub-capabilities.
@@ -53,12 +57,14 @@ PROCEDURE:
 4. For EACH wireframe block, verify it by:
    a. Reading the wireframe carefully; identify its screen purpose, key regions,
       and named controls.
-   b. Using Playwright to navigate to the matching page. Sign in when needed.
+   b. Using Playwright FIRST to navigate to the matching page. Sign in when needed.
       Respect the shared user/chat budgets.
    c. For each labelled element, checking whether a visually equivalent element
       exists in the live UI. Minor styling differences are acceptable; missing
       regions, missing controls, or wrong information architecture are not.
-   d. Optionally cross-checking the React source to confirm component structure.
+   d. Only if an element is missing or its behaviour is unclear from the live UI,
+      cross-check the React source with Grep / Glob / Read to determine whether
+      the component exists but is hidden/broken, or is not implemented at all.
    e. Collecting every defect in a bugs list.
 
    Severity guide for wireframes:
