@@ -14,7 +14,7 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
     } catch { /* ignore */ }
     throw new Error(errorText)
   }
-  if (res.status === 200 || res.status === 201) return res.json() as Promise<T>
+  if ((res.status === 200 || res.status === 201) && res.headers.get('content-length') !== '0' && res.headers.get('content-type')?.includes('json')) return res.json() as Promise<T>
   return undefined as T
 }
 
