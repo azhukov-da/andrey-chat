@@ -9,6 +9,9 @@ Uses the Claude Agent SDK with three specialized subagents:
 Playwright MCP is provided to the verifier subagents so they can drive the
 site. The agents may create up to 10 users and up to 20 chats if needed
 to cover the requirement / wireframe matrix.
+
+Structured output is enforced via SDK MCP tools — each subagent must call
+a typed submit tool rather than return free-form JSON text.
 """
 
 from __future__ import annotations
@@ -21,6 +24,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from models import AnalysisReport, RequirementResult, WireframeResult
 from claude_agent_sdk import (
     AgentDefinition,
     AssistantMessage,
@@ -30,6 +34,8 @@ from claude_agent_sdk import (
     TextBlock,
     ThinkingBlock,
     ToolUseBlock,
+    create_sdk_mcp_server,
+    tool,
 )
 
 
@@ -67,13 +73,116 @@ def load_config() -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Subagent definitions
+# Result store
 # ---------------------------------------------------------------------------
 
-# Playwright MCP exposes many tools; we allow the whole namespace via wildcard.
+class ResultStore:
+    """Holds all subagent results in memory for the duration of a run."""
+
+    def __init__(self, report_path: Path) -> None:
+        self.requirements: list[RequirementResult] = []
+        self.wireframes:   list[WireframeResult]   = []
+        self.report:       AnalysisReport | None   = None
+        self.report_path   = report_path
+
+
+# ---------------------------------------------------------------------------
+# SDK MCP result-submission tools
+# ---------------------------------------------------------------------------
+
+def build_result_server(store: ResultStore):
+    """
+    Creates an SDK MCP server that exposes four tools used by subagents to
+    submit structured results. The Pydantic model schemas are passed as
+    input_schema, so the SDK validates arguments before the handler runs.
+    """
+
+    @tool(
+        "submit_requirement_result",
+        "Submit the structured verification result for a single requirement. Call exactly once.",
+        RequirementResult.model_json_schema(),
+    )
+    async def _submit_requirement(args):
+        result = RequirementResult.model_validate(args)
+        store.requirements.append(result)
+        return {"content": [{"type": "text", "text": f"Accepted result for requirement {result.id}."}]}
+
+    @tool(
+        "submit_wireframe_result",
+        "Submit the structured verification result for a single wireframe. Call exactly once.",
+        WireframeResult.model_json_schema(),
+    )
+    async def _submit_wireframe(args):
+        result = WireframeResult.model_validate(args)
+        store.wireframes.append(result)
+        return {"content": [{"type": "text", "text": f"Accepted result for wireframe {result.id}."}]}
+
+    @tool(
+        "get_all_results",
+        "Retrieve all submitted requirement and wireframe results for synthesis.",
+        {},
+    )
+    async def _get_all_results(_):
+        data = {
+            "requirements": [r.model_dump() for r in store.requirements],
+            "wireframes":   [w.model_dump() for w in store.wireframes],
+        }
+        return {"content": [{"type": "text", "text": json.dumps(data)}]}
+
+    @tool(
+        "submit_analysis_report",
+        "Validate and write the final analysis report to disk. Call exactly once.",
+        AnalysisReport.model_json_schema(),
+    )
+    async def _submit_report(args):
+        report = AnalysisReport.model_validate(args)
+        store.report = report
+        store.report_path.write_text(report.model_dump_json(indent=2), encoding="utf-8")
+        return {"content": [{"type": "text", "text": f"REPORT_WRITTEN: {store.report_path}"}]}
+
+    return create_sdk_mcp_server(
+        name="results",
+        tools=[_submit_requirement, _submit_wireframe, _get_all_results, _submit_report],
+    )
+
+
+# ---------------------------------------------------------------------------
+# Allowed tool lists
+# ---------------------------------------------------------------------------
+
 PLAYWRIGHT_TOOLS = ["mcp__playwright"]
 
-REQUIREMENT_VERIFIER_PROMPT = """
+REQUIREMENT_VERIFIER_TOOLS = ["Read", "Grep", "Glob", "Bash", *PLAYWRIGHT_TOOLS,
+                               "mcp__results__submit_requirement_result"]
+WIREFRAME_VERIFIER_TOOLS   = ["Read", "Glob", *PLAYWRIGHT_TOOLS,
+                               "mcp__results__submit_wireframe_result"]
+SYNTHESIS_TOOLS            = ["Read",
+                               "mcp__results__get_all_results",
+                               "mcp__results__submit_analysis_report"]
+ORCHESTRATOR_TOOLS         = ["Read", "Grep", "Glob", "Bash", "Write", "Agent", *PLAYWRIGHT_TOOLS]
+
+
+# ---------------------------------------------------------------------------
+# Subagent prompts
+# ---------------------------------------------------------------------------
+
+_SEVERITY_GUIDE = """
+Severity guide:
+  Critical - data loss, security issue, complete feature failure, crash
+  High     - major feature broken, no workaround
+  Medium   - partial malfunction, workaround exists
+  Low      - cosmetic, minor UX issue
+""".strip()
+
+_WIREFRAME_SEVERITY_GUIDE = """
+Severity guide:
+  Critical - completely wrong screen or severe data issue
+  High     - key control missing or non-functional
+  Medium   - control present but behaves incorrectly, workaround exists
+  Low      - cosmetic / minor layout deviation
+""".strip()
+
+REQUIREMENT_VERIFIER_PROMPT = f"""
 You are the REQUIREMENT VERIFIER subagent.
 
 Given a single functional requirement (or small batch), determine whether the
@@ -90,26 +199,19 @@ live website and its source code satisfy it. You MUST:
    20 created chats across the ENTIRE analysis run.
 4. Decide a status:
      - "Implemented"          - feature is fully present and works end-to-end.
-     - "PartiallyImplemented" - feature exists but has gaps, bugs, or missing
-                                sub-capabilities.
+     - "PartiallyImplemented" - feature exists but has gaps, bugs, or missing sub-capabilities.
      - "NotImplemented"       - feature is absent or non-functional.
-5. Return ONLY a JSON object of the shape:
-   {
-     "id": "<stable requirement id, e.g. 2.1>",
-     "title": "<short requirement title>",
-     "status": "Implemented|PartiallyImplemented|NotImplemented",
-     "comment": "<free-form evidence: files inspected, UI actions taken, bugs found>",
-     "evidence": {
-       "code_refs": ["path:line", ...],
-       "ui_actions": ["<short description>", ...]
-     }
-   }
+5. Populate the "bugs" array with every defect observed.
 
-Do not include any prose outside the JSON.
+{_SEVERITY_GUIDE}
+
+OUTPUT:
+Call `submit_requirement_result` exactly once with your findings.
+The tool enforces the schema — do not output JSON text yourself.
 """.strip()
 
 
-WIREFRAME_VERIFIER_PROMPT = """
+WIREFRAME_VERIFIER_PROMPT = f"""
 You are the WIREFRAME VERIFIER subagent.
 
 You are given ONE ASCII wireframe block describing an intended screen.
@@ -127,66 +229,56 @@ Steps:
    missing regions, missing controls, or wrong information architecture are not.
 4. Optionally cross-check the React source under the frontend path to confirm
    component structure.
-5. Emit ONLY a JSON object:
-   {
-     "id": "<wireframe id or screen name>",
-     "screen": "<short screen description>",
-     "status": "Implemented|PartiallyImplemented|NotImplemented",
-     "missing_elements": ["<label>", ...],
-     "extra_elements":   ["<label>", ...],
-     "comment": "<free-form notes, URL visited, screenshots taken>"
-   }
+5. Populate the "bugs" array with every defect observed.
+
+{_WIREFRAME_SEVERITY_GUIDE}
+
+OUTPUT:
+Call `submit_wireframe_result` exactly once with your findings.
+The tool enforces the schema — do not output JSON text yourself.
 """.strip()
 
 
 SYNTHESIS_PROMPT = """
 You are the SYNTHESIS subagent.
 
-You receive two JSON arrays:
-  - "requirements": list of requirement verifier results
-  - "wireframes":   list of wireframe verifier results
+Steps:
+1. Call `get_all_results` to retrieve all requirement and wireframe verifications.
+2. Count totals for the summary statistics.
+3. Collect every bug from every result. For each bug add a "source" field:
+   "requirement:<id>" or "wireframe:<id>".
+   Deduplicate near-identical bugs by keeping the higher-severity copy.
+   Sort bugs: Critical first, then High, Medium, Low.
+4. Call `submit_analysis_report` exactly once with the complete report.
+   The tool validates and writes the file — do not write files yourself.
+5. Reply with the path returned by the tool.
 
-Produce a single final JSON report with this exact shape:
-{
-  "summary": {
-    "total_requirements": <int>,
-    "implemented": <int>,
-    "partially_implemented": <int>,
-    "not_implemented": <int>,
-    "total_wireframes": <int>,
-    "wireframes_implemented": <int>,
-    "wireframes_partially_implemented": <int>,
-    "wireframes_not_implemented": <int>,
-    "overall_comment": "<2-4 sentence executive summary>"
-  },
-  "requirements": [ ...verbatim items from input... ],
-  "wireframes":   [ ...verbatim items from input... ]
-}
-
-Write the report to the path supplied in the orchestrator prompt using the
-Write tool, then reply with the absolute path of the file you wrote.
-Do not invent new requirements or wireframes; only aggregate what was given.
+Do not invent new requirements, wireframes, or bugs; only aggregate what was given.
 """.strip()
 
 
-def build_options(cfg: dict) -> ClaudeAgentOptions:
+# ---------------------------------------------------------------------------
+# Agent wiring
+# ---------------------------------------------------------------------------
+
+def build_options(cfg: dict, result_server) -> ClaudeAgentOptions:
     agents = {
         "requirement-verifier": AgentDefinition(
             description="Verifies a single functional requirement against code and live UI.",
             prompt=REQUIREMENT_VERIFIER_PROMPT,
-            tools=["Read", "Grep", "Glob", "Bash", *PLAYWRIGHT_TOOLS],
+            tools=REQUIREMENT_VERIFIER_TOOLS,
             model="sonnet",
         ),
         "wireframe-verifier": AgentDefinition(
             description="Verifies a single ASCII wireframe against the rendered UI.",
             prompt=WIREFRAME_VERIFIER_PROMPT,
-            tools=["Read", "Glob", *PLAYWRIGHT_TOOLS],
+            tools=WIREFRAME_VERIFIER_TOOLS,
             model="sonnet",
         ),
         "synthesis": AgentDefinition(
             description="Merges verification results into the final JSON report.",
             prompt=SYNTHESIS_PROMPT,
-            tools=["Read", "Write"],
+            tools=SYNTHESIS_TOOLS,
             model="sonnet",
         ),
     }
@@ -196,19 +288,14 @@ def build_options(cfg: dict) -> ClaudeAgentOptions:
             "type": "stdio",
             "command": "npx",
             "args": ["-y", "@playwright/mcp@latest"],
-        }
+        },
+        "results": result_server,
     }
-
-    # Tools the orchestrator itself may call. Subagents get their own lists above.
-    allowed_tools = [
-        "Read", "Grep", "Glob", "Bash", "Write", "Task",
-        *PLAYWRIGHT_TOOLS,
-    ]
 
     return ClaudeAgentOptions(
         agents=agents,
         mcp_servers=mcp_servers,
-        allowed_tools=allowed_tools,
+        allowed_tools=ORCHESTRATOR_TOOLS,
         permission_mode="acceptEdits",
         cwd=str(Path.cwd()),
         model="sonnet",
@@ -247,19 +334,19 @@ PROCEDURE:
 
 3. For EACH requirement, dispatch the `requirement-verifier` subagent via the
    Task tool. Pass the requirement id, full text, and the shared context
-   (paths, URL, credentials, budgets). Collect its JSON result.
+   (paths, URL, credentials, budgets). The subagent submits its result via
+   the `submit_requirement_result` tool — you do not need to parse its output.
 
    For EACH wireframe, dispatch the `wireframe-verifier` subagent via the
-   Task tool. Pass the wireframe id and the raw ASCII block plus shared
-   context. Collect its JSON result.
+   Task tool in the same way.
 
    You may dispatch subagents in parallel when independent. Respect the
    global user/chat budgets - when near the cap, instruct subagents to
    reuse existing accounts and chats.
 
-4. After all subagents return, call the `synthesis` subagent via Task. Give
-   it the two arrays plus the output path `{cfg['report_path']}`. It will
-   write the final JSON file.
+4. After all subagents return, dispatch the `synthesis` subagent via Task.
+   It will read all submitted results via `get_all_results`, aggregate them,
+   and write the final report via `submit_analysis_report`.
 
 5. When synthesis confirms the file is written, reply with a single line:
    REPORT_WRITTEN: <absolute path>
@@ -277,7 +364,9 @@ Rules:
 
 async def run() -> None:
     cfg = load_config()
-    options = build_options(cfg)
+    store = ResultStore(cfg["report_path"])
+    result_server = build_result_server(store)
+    options = build_options(cfg, result_server)
     prompt = build_orchestrator_prompt(cfg)
 
     print(f"[analyzer] website  : {cfg['website_url']}")
@@ -294,22 +383,31 @@ async def run() -> None:
                     if isinstance(block, TextBlock):
                         print(block.text)
                     elif isinstance(block, ThinkingBlock):
-                        pass  # skip internal thinking
+                        pass
                     elif isinstance(block, ToolUseBlock):
                         print(f"  [tool] {block.name}")
             elif isinstance(message, ResultMessage):
                 print(f"\n[analyzer] finished. cost=${message.total_cost_usd or 0:.4f}")
 
-    if cfg["report_path"].exists():
+    report = store.report
+    if report is None and cfg["report_path"].exists():
         try:
-            data = json.loads(cfg["report_path"].read_text(encoding="utf-8"))
-            summary = data.get("summary", {})
-            print("\n[analyzer] summary:")
-            print(json.dumps(summary, indent=2))
-        except json.JSONDecodeError:
-            print("[analyzer] WARNING: report file is not valid JSON.")
+            report = AnalysisReport.model_validate_json(
+                cfg["report_path"].read_text(encoding="utf-8")
+            )
+        except Exception as exc:
+            print(f"[analyzer] WARNING: could not parse report — {exc}")
+
+    if report:
+        print("\n[analyzer] summary:")
+        print(report.summary.model_dump_json(indent=2))
+        print(f"\n[analyzer] bugs found: {report.summary.total_bugs} "
+              f"(critical={report.summary.bugs_critical} "
+              f"high={report.summary.bugs_high} "
+              f"medium={report.summary.bugs_medium} "
+              f"low={report.summary.bugs_low})")
     else:
-        print("[analyzer] WARNING: no report file produced.")
+        print("[analyzer] WARNING: no report produced.")
 
 
 if __name__ == "__main__":
