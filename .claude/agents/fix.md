@@ -56,14 +56,17 @@ PROCEDURE:
       - If still PRESENT and attempt < 5: record why (what you saw, what failed), increment attempt, repeat from (a).
       - If still PRESENT and attempt == 5: stop and go to step 5 as a failure.
 
-4. UPDATE REPORT (success path only) — only after Playwright confirmed the bug is fixed:
+4. UPDATE REPORT — after the loop ends, mark the bug with its final status:
+   - On SUCCESS (Playwright confirmed the bug is fixed): use severity `"Fixed"`.
+   - On FAILURE (still present after 5 attempts): use severity `"Non-Fixable"`.
    - Read `REPORT_PATH` fresh.
-   - Find the bug in `all_bugs` that matches the `description` and `source` recorded in step 2, and change its `severity` to `"Fixed"`.
-   - Also find the same bug inside the originating `requirements[].bugs` or `wireframes[].bugs` entry (based on `source`) and change its `severity` to `"Fixed"` there as well.
+   - Find the bug in `all_bugs` that matches the `description` and `source` recorded in step 2, and change its `severity` to the final status above.
+   - Also find the same bug inside the originating `requirements[].bugs` or `wireframes[].bugs` entry (based on `source`) and change its `severity` there as well.
    - Recompute `summary`:
-     - `bugs_critical`, `bugs_high`, `bugs_medium`, `bugs_low` count only bugs whose severity still matches that level (Fixed bugs are excluded from those counts).
-     - Add a `bugs_fixed` field with the count of entries now marked `"Fixed"`.
-     - Keep `total_bugs` equal to the total number of entries in `all_bugs` (including Fixed).
+     - `bugs_critical`, `bugs_high`, `bugs_medium`, `bugs_low` count only bugs whose severity still matches that level (Fixed and Non-Fixable bugs are excluded from those counts).
+     - Add/update a `bugs_fixed` field with the count of entries now marked `"Fixed"`.
+     - Add/update a `bugs_non_fixable` field with the count of entries now marked `"Non-Fixable"`.
+     - Keep `total_bugs` equal to the total number of entries in `all_bugs` (including Fixed and Non-Fixable).
    - Write the updated JSON back to `REPORT_PATH` (preserve overall structure and ordering of entries; only severity values and summary numbers change).
 
 5. OUTPUT — reply with a single concise report:
@@ -78,7 +81,7 @@ PROCEDURE:
 RULES:
 - Only address the single first Critical bug. Do not attempt to fix other bugs, even if noticed.
 - Never edit requirements or wireframes.
-- Only edit `REPORT_PATH` in step 4 (success path). Never mutate severities on the failure path.
+- Only edit `REPORT_PATH` in step 4. On success mark severity `"Fixed"`; on failure after 5 attempts mark severity `"Non-Fixable"`. Do not mutate severities of any other bugs.
 - Never skip the RESTART step; code changes are not validated without a fresh server.
 - Never fabricate a verification result — base FIXED/PRESENT strictly on what Playwright observed.
 - Keep prose minimal — work happens in tool calls.

@@ -73,6 +73,23 @@ public class RoomsController : ControllerBase
         return NoContent();
     }
 
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateRoomRequest request)
+    {
+        var result = await _roomService.UpdateRoomAsync(id, request.Name, request.Description, request.Visibility);
+
+        if (!result.IsSuccess)
+        {
+            if (result.Error?.Code == "Room.NotFound")
+                return NotFound(result.Error);
+            if (result.Error?.Code == "Room.NotOwner" || result.Error?.Code == "Authorization.Unauthorized")
+                return StatusCode(403, result.Error);
+            return BadRequest(result.Error);
+        }
+
+        return Ok(result.Value);
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
@@ -158,5 +175,6 @@ public class RoomsController : ControllerBase
 }
 
 public record CreateRoomRequest(string Name, string? Description, RoomVisibility Visibility);
+public record UpdateRoomRequest(string Name, string? Description, RoomVisibility Visibility);
 public record BanMemberRequest(string? Reason);
 

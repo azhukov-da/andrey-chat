@@ -223,6 +223,55 @@ public class RoomService : IRoomService
         return Result.Success();
     }
 
+    public async Task<Result<RoomDto>> UpdateRoomAsync(Guid roomId, string name, string? description, RoomVisibility visibility)
+    {
+        if (!_currentUser.IsAuthenticated || _currentUser.UserId == null)
+            return Errors.Authorization.Unauthorized;
+
+        if (string.IsNullOrWhiteSpace(name))
+            return new Error("Room.NameRequired", "Room name is required.");
+
+        var room = await _context.Rooms.FirstOrDefaultAsync(r => r.Id == roomId && r.DeletedAt == null);
+        if (room == null)
+            return Errors.Room.NotFound(roomId);
+
+        if (room.OwnerId != _currentUser.UserId)
+            return Errors.Room.NotOwner;
+
+        var trimmedName = name.Trim();
+        if (!string.Equals(trimmedName, room.Name, StringComparison.Ordinal))
+        {
+            var nameExists = await _context.Rooms
+                .AnyAsync(r => r.Id != roomId && r.Name == trimmedName && r.Kind == RoomKind.Group && r.DeletedAt == null);
+            if (nameExists)
+                return Errors.Room.NameAlreadyExists;
+        }
+
+        room.Name = trimmedName;
+        room.Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+        room.Visibility = visibility;
+
+        await _context.SaveChangesAsync();
+
+        var memberCount = await _context.RoomMemberships.CountAsync(m => m.RoomId == roomId);
+        var ownerUserName = await _context.Users.Where(u => u.Id == room.OwnerId).Select(u => u.UserName).FirstOrDefaultAsync();
+
+        return new RoomDto
+        {
+            Id = room.Id,
+            Name = room.Name,
+            Description = room.Description,
+            Visibility = room.Visibility,
+            Kind = room.Kind,
+            OwnerId = room.OwnerId,
+            OwnerUserName = ownerUserName,
+            IsFrozen = room.IsFrozen,
+            CreatedAt = room.CreatedAt,
+            MemberCount = memberCount,
+            MyRole = RoomRole.Owner
+        };
+    }
+
     public async Task<Result> DeleteRoomAsync(Guid roomId)
     {
         if (!_currentUser.IsAuthenticated || _currentUser.UserId == null)

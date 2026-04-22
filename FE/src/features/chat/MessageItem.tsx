@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { editMessage, deleteMessage } from '@/api/messages'
+import { downloadAttachment, loadAttachmentObjectUrl } from '@/api/attachments'
 import { formatTime } from '@/lib/formatTime'
 import { useUiStore } from '@/stores/uiStore'
-import type { Message } from '@/types'
+import type { Message, AttachmentMetadata } from '@/types'
 
 interface Props {
   message: Message
@@ -59,6 +60,13 @@ export default function MessageItem({ message, isMine, roomId }: Props) {
         </div>
       )}
       <div className="chat-bubble max-w-sm break-words">
+        {message.attachments && message.attachments.length > 0 && (
+          <div className="flex flex-col gap-2 mb-2" data-testid="attachments">
+            {message.attachments.map((a) => (
+              <AttachmentView key={a.id} attachment={a} />
+            ))}
+          </div>
+        )}
         {editing ? (
           <div className="flex gap-2">
             <input
@@ -92,6 +100,62 @@ export default function MessageItem({ message, isMine, roomId }: Props) {
           </>
         )}
       </div>
+    </div>
+  )
+}
+
+function AttachmentView({ attachment }: { attachment: AttachmentMetadata }) {
+  const isImage = attachment.kind === 'Image'
+  const [imgUrl, setImgUrl] = useState<string | null>(null)
+  const [imgError, setImgError] = useState(false)
+
+  useEffect(() => {
+    if (!isImage) return
+    let revokeUrl: string | null = null
+    let cancelled = false
+    loadAttachmentObjectUrl(attachment.id)
+      .then((url) => {
+        if (cancelled) {
+          URL.revokeObjectURL(url)
+          return
+        }
+        revokeUrl = url
+        setImgUrl(url)
+      })
+      .catch(() => setImgError(true))
+    return () => {
+      cancelled = true
+      if (revokeUrl) URL.revokeObjectURL(revokeUrl)
+    }
+  }, [attachment.id, isImage])
+
+  const handleDownload = () => {
+    void downloadAttachment(attachment.id, attachment.fileName).catch(() => {})
+  }
+
+  const sizeKb = (attachment.sizeBytes / 1024).toFixed(1)
+
+  return (
+    <div className="border border-base-300 rounded p-2 bg-base-200" data-testid="attachment-item">
+      {isImage && imgUrl && !imgError && (
+        <img src={imgUrl} alt={attachment.fileName} className="max-h-48 rounded mb-1" />
+      )}
+      <div className="flex items-center gap-2 text-sm">
+        <span className="opacity-70">{isImage ? '🖼' : '📄'}</span>
+        <button
+          type="button"
+          className="link link-primary truncate"
+          onClick={handleDownload}
+          title={`Download ${attachment.fileName}`}
+          data-testid="attachment-download"
+        >
+          {attachment.fileName}
+        </button>
+        <span className="opacity-50 text-xs whitespace-nowrap">{sizeKb} KB</span>
+      </div>
+      {attachment.comment && (
+        <div className="text-xs opacity-70 mt-1">{attachment.comment}</div>
+      )}
     </div>
   )
 }

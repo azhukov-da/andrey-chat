@@ -11,6 +11,7 @@ public interface IRoomService
     Task<Result<RoomDto>> GetRoomAsync(Guid roomId);
     Task<Result<RoomDto>> CreateRoomAsync(string name, string? description, RoomVisibility visibility);
     Task<Result> JoinRoomAsync(Guid roomId);
+    Task<Result<RoomDto>> UpdateRoomAsync(Guid roomId, string name, string? description, RoomVisibility visibility);
     Task<Result> DeleteRoomAsync(Guid roomId);
     Task<Result<List<RoomMemberDto>>> ListMembersAsync(Guid roomId);
     Task<Result> MakeAdminAsync(Guid roomId, string targetUserId);

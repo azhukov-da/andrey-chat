@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRoom } from '@/hooks/useRoom'
@@ -7,6 +7,7 @@ import { deleteRoom } from '@/api/rooms'
 import { RoomRole } from '@/types'
 import MessageList from './MessageList'
 import MessageComposer from './MessageComposer'
+import ManageRoomDialog from '@/features/rooms/ManageRoomDialog'
 
 export default function ChatWindow() {
   const { id } = useParams<{ id: string }>()
@@ -14,6 +15,7 @@ export default function ChatWindow() {
   const setActiveRoom = useUiStore((s) => s.setActiveRoom)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [manageOpen, setManageOpen] = useState(false)
 
   const deleteMutation = useMutation({
     mutationFn: (roomId: string) => deleteRoom(roomId),
@@ -46,6 +48,7 @@ export default function ChatWindow() {
   }
 
   const isOwner = room.myRole === RoomRole.Owner
+  const isAdmin = isOwner || room.myRole === RoomRole.Admin
 
   const handleDelete = () => {
     if (!room) return
@@ -61,19 +64,31 @@ export default function ChatWindow() {
           <h2 className="font-bold text-lg"># {room.name}</h2>
           {room.description && <p className="text-sm text-base-content/60">{room.description}</p>}
         </div>
-        {isOwner && (
-          <button
-            className="btn btn-sm btn-error btn-outline"
-            onClick={handleDelete}
-            disabled={deleteMutation.isPending}
-            data-testid="delete-room-button"
-          >
-            {deleteMutation.isPending ? 'Deleting…' : 'Delete room'}
-          </button>
-        )}
+        <div className="flex gap-2">
+          {isAdmin && (
+            <button
+              className="btn btn-sm btn-outline"
+              onClick={() => setManageOpen(true)}
+              data-testid="manage-room-button"
+            >
+              Manage room
+            </button>
+          )}
+          {isOwner && (
+            <button
+              className="btn btn-sm btn-error btn-outline"
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+              data-testid="delete-room-button"
+            >
+              {deleteMutation.isPending ? 'Deleting…' : 'Delete room'}
+            </button>
+          )}
+        </div>
       </div>
       <MessageList roomId={room.id} />
       <MessageComposer roomId={room.id} />
+      {manageOpen && <ManageRoomDialog room={room} onClose={() => setManageOpen(false)} />}
     </div>
   )
 }

@@ -1,11 +1,12 @@
 {
   "summary": {
     "total_bugs": 42,
-    "bugs_critical": 4,
+    "bugs_critical": 0,
     "bugs_high": 21,
     "bugs_medium": 13,
     "bugs_low": 5,
-    "bugs_fixed": 2
+    "bugs_fixed": 6,
+    "bugs_non_fixable": 0
   },
   "requirements": [
     {
@@ -286,7 +287,7 @@
       "status": "NotImplemented",
       "bugs": [
         {
-          "severity": "Critical",
+          "severity": "Fixed",
           "description": "No AttachmentsController exists; LocalFileStorage is wired but never invoked by any controller/service. Attachment upload/download paths are entirely missing end-to-end."
         }
       ]
@@ -458,7 +459,7 @@
       "status": "NotImplemented",
       "bugs": [
         {
-          "severity": "Critical",
+          "severity": "Fixed",
           "description": "No admin UI exists: no Manage Room modal, no Members/Admins/Banned/Invitations/Settings tabs (as shown in wireframe), no delete-room action. Corresponds to missing BE endpoints (2.4.6, 2.4.7, 2.4.8, 2.4.9)."
         }
       ]
@@ -549,10 +550,10 @@
     {
       "id": "wf-8",
       "screen_name": "Manage Room modal - Members tab (list with Make admin/Remove admin/Ban/Remove)",
-      "status": "NotImplemented",
+      "status": "Implemented",
       "bugs": [
         {
-          "severity": "Critical",
+          "severity": "Fixed",
           "description": "No Manage Room modal exists. No component under FE/src/features/rooms implements member management."
         }
       ]
@@ -596,7 +597,7 @@
       "status": "NotImplemented",
       "bugs": [
         {
-          "severity": "Critical",
+          "severity": "Fixed",
           "description": "No settings UI and no UpdateRoom or DeleteRoom endpoints in RoomService/RoomsController."
         }
       ]
@@ -614,22 +615,22 @@
       "source": "requirement:2.4.7"
     },
     {
-      "severity": "Critical",
+      "severity": "Fixed",
       "description": "No AttachmentsController exists; LocalFileStorage is wired but never invoked. Attachment upload/download paths are entirely missing end-to-end.",
       "source": "requirement:2.6.1"
     },
     {
-      "severity": "Critical",
+      "severity": "Fixed",
       "description": "No admin UI exists: no Manage Room modal, no Members/Admins/Banned/Invitations/Settings tabs, no delete-room action.",
       "source": "requirement:4.5"
     },
     {
-      "severity": "Critical",
+      "severity": "Fixed",
       "description": "No Manage Room modal exists. No member management component under FE/src/features/rooms.",
       "source": "wireframe:wf-8"
     },
     {
-      "severity": "Critical",
+      "severity": "Fixed",
       "description": "No room settings UI and no UpdateRoom or DeleteRoom endpoints.",
       "source": "wireframe:wf-12"
     },
