@@ -49,6 +49,28 @@ public class FriendsController : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("requests/{userId}/reject")]
+    public async Task<IActionResult> RejectRequest(string userId)
+    {
+        var result = await _friendService.RejectFriendRequestAsync(userId);
+
+        if (!result.IsSuccess)
+            return BadRequest(result.Error);
+
+        return NoContent();
+    }
+
+    [HttpDelete("{userId}")]
+    public async Task<IActionResult> Remove(string userId)
+    {
+        var result = await _friendService.RemoveFriendAsync(userId);
+
+        if (!result.IsSuccess)
+            return BadRequest(result.Error);
+
+        return NoContent();
+    }
+
     [HttpPost("blocks/{userId}")]
     public async Task<IActionResult> Block(string userId)
     {

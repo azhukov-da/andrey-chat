@@ -19,6 +19,7 @@ public static class DependencyInjection
         services.AddScoped<IMessageService, MessageService>();
         services.AddScoped<IDirectChatService, DirectChatService>();
         services.AddScoped<IFriendService, FriendService>();
+        services.AddScoped<ISessionService, SessionService>();
 
         return services;
     }

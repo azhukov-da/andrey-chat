@@ -26,6 +26,7 @@ export default function TopNav({ me }: Props) {
           </li>
           <li><NavLink to="/contacts" className={({ isActive }) => isActive ? 'active' : ''}>Contacts</NavLink></li>
           <li><NavLink to="/profile" className={({ isActive }) => isActive ? 'active' : ''}>Profile</NavLink></li>
+          <li><NavLink to="/sessions" className={({ isActive }) => isActive ? 'active' : ''}>Sessions</NavLink></li>
         </ul>
       </div>
       <div className="navbar-end pr-4">
@@ -38,6 +39,7 @@ export default function TopNav({ me }: Props) {
           </label>
           <ul tabIndex={0} className="dropdown-content menu bg-base-100 rounded-box shadow z-50 w-40 p-1">
             <li><NavLink to="/profile">Profile</NavLink></li>
+            <li><NavLink to="/sessions">Sessions</NavLink></li>
             <li><button onClick={logout} className="text-error">Sign Out</button></li>
           </ul>
         </div>

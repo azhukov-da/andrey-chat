@@ -111,6 +111,50 @@ public class FriendService : IFriendService
         return Result.Success();
     }
 
+    public async Task<Result> RejectFriendRequestAsync(string friendUserId)
+    {
+        if (!_currentUser.IsAuthenticated || _currentUser.UserId == null)
+            return Errors.Authorization.Unauthorized;
+
+        var userIds = new[] { _currentUser.UserId, friendUserId }.OrderBy(id => id).ToArray();
+
+        var friendship = await _context.Friendships
+            .FirstOrDefaultAsync(f => f.UserAId == userIds[0] && f.UserBId == userIds[1]);
+
+        if (friendship == null)
+            return Errors.Friendship.NotFound;
+
+        if (friendship.Status != FriendshipStatus.Pending)
+            return Errors.Friendship.NotFound;
+
+        if (friendship.RequestedByUserId == _currentUser.UserId)
+            return Errors.Friendship.CannotRejectOwnRequest;
+
+        _context.Friendships.Remove(friendship);
+        await _context.SaveChangesAsync();
+
+        return Result.Success();
+    }
+
+    public async Task<Result> RemoveFriendAsync(string friendUserId)
+    {
+        if (!_currentUser.IsAuthenticated || _currentUser.UserId == null)
+            return Errors.Authorization.Unauthorized;
+
+        var userIds = new[] { _currentUser.UserId, friendUserId }.OrderBy(id => id).ToArray();
+
+        var friendship = await _context.Friendships
+            .FirstOrDefaultAsync(f => f.UserAId == userIds[0] && f.UserBId == userIds[1]);
+
+        if (friendship == null)
+            return Errors.Friendship.NotFound;
+
+        _context.Friendships.Remove(friendship);
+        await _context.SaveChangesAsync();
+
+        return Result.Success();
+    }
+
     public async Task<Result> BlockUserAsync(string userId)
     {
         if (!_currentUser.IsAuthenticated || _currentUser.UserId == null)

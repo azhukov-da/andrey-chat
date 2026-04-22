@@ -14,6 +14,7 @@ public interface IApplicationDbContext
     DbSet<Attachment> Attachments { get; }
     DbSet<Friendship> Friendships { get; }
     DbSet<UserBlock> UserBlocks { get; }
+    DbSet<UserSession> UserSessions { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

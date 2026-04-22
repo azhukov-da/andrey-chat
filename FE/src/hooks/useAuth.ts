@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
 import * as authApi from '@/api/auth'
 import * as meApi from '@/api/me'
+import * as sessionsApi from '@/api/sessions'
 
 export function useMe() {
   const accessToken = useAuthStore((s) => s.accessToken)
@@ -28,11 +29,25 @@ export function useAuth() {
       const me = await meApi.getMe()
       setMe(me)
       queryClient.setQueryData(['me'], me)
+      try {
+        const reg = await sessionsApi.registerSession(navigator.platform || undefined)
+        localStorage.setItem('sessionId', reg.id)
+      } catch {
+        /* ignore session registration errors */
+      }
     },
     [setTokens, setMe, setKeepSignedIn, queryClient]
   )
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    try {
+      if (localStorage.getItem('sessionId')) {
+        await sessionsApi.revokeCurrentSession()
+      }
+    } catch {
+      /* ignore */
+    }
+    localStorage.removeItem('sessionId')
     clearAuth()
     queryClient.clear()
     navigate('/login')
@@ -51,6 +66,12 @@ export function useAuth() {
       const me = await meApi.getMe()
       setMe(me)
       queryClient.setQueryData(['me'], me)
+      if (!localStorage.getItem('sessionId')) {
+        try {
+          const reg = await sessionsApi.registerSession(navigator.platform || undefined)
+          localStorage.setItem('sessionId', reg.id)
+        } catch { /* ignore */ }
+      }
       return true
     } catch {
       if (refreshToken) {

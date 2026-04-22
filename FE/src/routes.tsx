@@ -10,6 +10,7 @@ const PublicCatalog = lazy(() => import('@/features/rooms/PublicCatalog'))
 const ChatWindow = lazy(() => import('@/features/chat/ChatWindow'))
 const FriendList = lazy(() => import('@/features/friends/FriendList'))
 const ProfilePage = lazy(() => import('@/features/profile/ProfilePage'))
+const SessionsPage = lazy(() => import('@/features/sessions/SessionsPage'))
 
 const Loading = () => (
   <div className="flex h-full items-center justify-center">
@@ -33,6 +34,7 @@ export const router = createBrowserRouter([
       { path: 'rooms/:id', element: wrap(<ChatWindow />) },
       { path: 'contacts', element: wrap(<FriendList />) },
       { path: 'profile', element: wrap(<ProfilePage />) },
+      { path: 'sessions', element: wrap(<SessionsPage />) },
     ],
   },
 ])

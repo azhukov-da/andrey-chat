@@ -36,6 +36,22 @@ public class DirectChatService : IDirectChatService
 
         var userIds = new[] { _currentUser.UserId, otherUser.Id }.OrderBy(id => id).ToArray();
 
+        var isBlockedEither = await _context.UserBlocks
+            .AnyAsync(b =>
+                (b.BlockerId == _currentUser.UserId && b.BlockedId == otherUser.Id) ||
+                (b.BlockerId == otherUser.Id && b.BlockedId == _currentUser.UserId));
+
+        if (isBlockedEither)
+            return Errors.Friendship.NotAccepted;
+
+        var areFriends = await _context.Friendships
+            .AnyAsync(f =>
+                f.UserAId == userIds[0] && f.UserBId == userIds[1] &&
+                f.Status == FriendshipStatus.Accepted);
+
+        if (!areFriends)
+            return Errors.Friendship.NotAccepted;
+
         var existingRoom = await _context.Rooms
             .Where(r => r.Kind == RoomKind.Direct && r.DeletedAt == null)
             .Where(r => r.Memberships.Count == 2 &&
@@ -60,18 +76,13 @@ public class DirectChatService : IDirectChatService
         if (existingRoom != null)
             return existingRoom;
 
-        var isBlocked = await _context.UserBlocks
-            .AnyAsync(b =>
-                (b.BlockerId == _currentUser.UserId && b.BlockedId == otherUser.Id) ||
-                (b.BlockerId == otherUser.Id && b.BlockedId == _currentUser.UserId));
-
         var room = new Room
         {
             Id = Guid.NewGuid(),
             Name = $"{_currentUser.UserName}-{username}",
             Visibility = RoomVisibility.Private,
             Kind = RoomKind.Direct,
-            IsFrozen = isBlocked,
+            IsFrozen = false,
             CreatedAt = DateTime.UtcNow
         };
 

@@ -20,4 +20,9 @@ public interface IRoomService
     Task<Result> BanMemberAsync(Guid roomId, string targetUserId, string? reason);
     Task<Result> UnbanMemberAsync(Guid roomId, string targetUserId);
     Task<Result<List<RoomBanDto>>> ListBannedAsync(Guid roomId);
+    Task<Result> LeaveRoomAsync(Guid roomId);
+    Task<Result<RoomInvitationDto>> InviteUserAsync(Guid roomId, string inviteeUsername);
+    Task<Result<List<RoomInvitationDto>>> ListMyInvitationsAsync();
+    Task<Result> AcceptInvitationAsync(Guid invitationId);
+    Task<Result> RejectInvitationAsync(Guid invitationId);
 }

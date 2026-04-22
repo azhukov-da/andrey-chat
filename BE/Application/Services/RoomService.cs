@@ -468,6 +468,174 @@ public class RoomService : IRoomService
         return Result.Success();
     }
 
+    public async Task<Result> LeaveRoomAsync(Guid roomId)
+    {
+        if (!_currentUser.IsAuthenticated || _currentUser.UserId == null)
+            return Errors.Authorization.Unauthorized;
+
+        var room = await _context.Rooms.FirstOrDefaultAsync(r => r.Id == roomId && r.DeletedAt == null);
+        if (room == null)
+            return Errors.Room.NotFound(roomId);
+
+        if (room.OwnerId == _currentUser.UserId)
+            return new Error("Room.OwnerCannotLeave", "Room owner cannot leave the room. Delete the room instead.");
+
+        var membership = await _context.RoomMemberships
+            .FirstOrDefaultAsync(m => m.RoomId == roomId && m.UserId == _currentUser.UserId);
+        if (membership == null)
+            return Errors.Room.NotMember;
+
+        _context.RoomMemberships.Remove(membership);
+        await _context.SaveChangesAsync();
+
+        await _notifier.RoomMembershipChangedAsync(roomId, _currentUser.UserId, "left");
+        return Result.Success();
+    }
+
+    public async Task<Result<RoomInvitationDto>> InviteUserAsync(Guid roomId, string inviteeUsername)
+    {
+        var (error, caller, room) = await RequireAdminAsync(roomId);
+        if (error != null) return error.Error!;
+
+        if (string.IsNullOrWhiteSpace(inviteeUsername))
+            return new Error("Invitation.UsernameRequired", "Invitee username is required.");
+
+        var invitee = await _context.Users.FirstOrDefaultAsync(u => u.UserName == inviteeUsername);
+        if (invitee == null)
+            return Errors.User.NotFoundByUsername(inviteeUsername);
+
+        if (invitee.Id == _currentUser.UserId)
+            return new Error("Invitation.CannotInviteSelf", "You cannot invite yourself.");
+
+        var alreadyMember = await _context.RoomMemberships
+            .AnyAsync(m => m.RoomId == roomId && m.UserId == invitee.Id);
+        if (alreadyMember)
+            return Errors.Room.AlreadyMember;
+
+        var isBanned = await _context.RoomBans
+            .AnyAsync(b => b.RoomId == roomId && b.BannedUserId == invitee.Id);
+        if (isBanned)
+            return Errors.Room.Banned;
+
+        var existing = await _context.RoomInvitations
+            .FirstOrDefaultAsync(i => i.RoomId == roomId && i.InvitedUserId == invitee.Id && i.Status == InvitationStatus.Pending);
+        if (existing != null)
+            return new Error("Invitation.AlreadyExists", "A pending invitation already exists for this user.");
+
+        var invitation = new RoomInvitation
+        {
+            Id = Guid.NewGuid(),
+            RoomId = roomId,
+            InvitedUserId = invitee.Id,
+            InvitedByUserId = _currentUser.UserId!,
+            Status = InvitationStatus.Pending,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.RoomInvitations.Add(invitation);
+        await _context.SaveChangesAsync();
+
+        return new RoomInvitationDto
+        {
+            Id = invitation.Id,
+            RoomId = roomId,
+            RoomName = room!.Name,
+            InvitedUserId = invitee.Id,
+            InvitedUserName = invitee.UserName ?? string.Empty,
+            InvitedByUserId = _currentUser.UserId!,
+            InvitedByUserName = _currentUser.UserName ?? string.Empty,
+            Status = invitation.Status,
+            CreatedAt = invitation.CreatedAt
+        };
+    }
+
+    public async Task<Result<List<RoomInvitationDto>>> ListMyInvitationsAsync()
+    {
+        if (!_currentUser.IsAuthenticated || _currentUser.UserId == null)
+            return Errors.Authorization.Unauthorized;
+
+        var invitations = await _context.RoomInvitations
+            .Where(i => i.InvitedUserId == _currentUser.UserId && i.Status == InvitationStatus.Pending && i.Room.DeletedAt == null)
+            .OrderByDescending(i => i.CreatedAt)
+            .Select(i => new RoomInvitationDto
+            {
+                Id = i.Id,
+                RoomId = i.RoomId,
+                RoomName = i.Room.Name,
+                InvitedUserId = i.InvitedUserId,
+                InvitedUserName = i.InvitedUser.UserName ?? string.Empty,
+                InvitedByUserId = i.InvitedByUserId,
+                InvitedByUserName = i.InvitedByUser.UserName ?? string.Empty,
+                Status = i.Status,
+                CreatedAt = i.CreatedAt
+            })
+            .ToListAsync();
+
+        return invitations;
+    }
+
+    public async Task<Result> AcceptInvitationAsync(Guid invitationId)
+    {
+        if (!_currentUser.IsAuthenticated || _currentUser.UserId == null)
+            return Errors.Authorization.Unauthorized;
+
+        var invitation = await _context.RoomInvitations
+            .Include(i => i.Room)
+            .FirstOrDefaultAsync(i => i.Id == invitationId);
+
+        if (invitation == null) return Errors.Invitation.NotFound;
+        if (invitation.InvitedUserId != _currentUser.UserId) return Errors.Invitation.NotRecipient;
+        if (invitation.Status != InvitationStatus.Pending) return Errors.Invitation.AlreadyProcessed;
+        if (invitation.Room.DeletedAt != null) return Errors.Room.NotFound(invitation.RoomId);
+
+        var isBanned = await _context.RoomBans
+            .AnyAsync(b => b.RoomId == invitation.RoomId && b.BannedUserId == _currentUser.UserId);
+        if (isBanned) return Errors.Room.Banned;
+
+        invitation.Status = InvitationStatus.Accepted;
+
+        var alreadyMember = await _context.RoomMemberships
+            .AnyAsync(m => m.RoomId == invitation.RoomId && m.UserId == _currentUser.UserId);
+
+        if (!alreadyMember)
+        {
+            _context.RoomMemberships.Add(new RoomMembership
+            {
+                RoomId = invitation.RoomId,
+                UserId = _currentUser.UserId!,
+                Role = RoomRole.Member,
+                JoinedAt = DateTime.UtcNow
+            });
+        }
+
+        await _context.SaveChangesAsync();
+
+        if (!alreadyMember)
+        {
+            await _notifier.AddUserToRoomGroupAsync(_currentUser.UserId!, invitation.RoomId);
+            await _notifier.RoomMembershipChangedAsync(invitation.RoomId, _currentUser.UserId!, "joined");
+        }
+
+        return Result.Success();
+    }
+
+    public async Task<Result> RejectInvitationAsync(Guid invitationId)
+    {
+        if (!_currentUser.IsAuthenticated || _currentUser.UserId == null)
+            return Errors.Authorization.Unauthorized;
+
+        var invitation = await _context.RoomInvitations
+            .FirstOrDefaultAsync(i => i.Id == invitationId);
+
+        if (invitation == null) return Errors.Invitation.NotFound;
+        if (invitation.InvitedUserId != _currentUser.UserId) return Errors.Invitation.NotRecipient;
+        if (invitation.Status != InvitationStatus.Pending) return Errors.Invitation.AlreadyProcessed;
+
+        invitation.Status = InvitationStatus.Rejected;
+        await _context.SaveChangesAsync();
+        return Result.Success();
+    }
+
     public async Task<Result<List<RoomBanDto>>> ListBannedAsync(Guid roomId)
     {
         var (error, caller, room) = await RequireAdminAsync(roomId);

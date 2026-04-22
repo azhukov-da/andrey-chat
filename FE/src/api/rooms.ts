@@ -81,3 +81,38 @@ export function unbanMember(roomId: string, userId: string) {
 export function listBanned(roomId: string) {
   return apiJson<BannedRoomUser[]>(`/api/Rooms/${roomId}/bans`)
 }
+
+export function leaveRoom(id: string) {
+  return apiJson<void>(`/api/Rooms/${id}/leave`, { method: 'POST' })
+}
+
+export interface RoomInvitation {
+  id: string
+  roomId: string
+  roomName: string
+  invitedUserId: string
+  invitedUserName: string
+  invitedByUserId: string
+  invitedByUserName: string
+  status: number
+  createdAt: string
+}
+
+export function inviteUserToRoom(roomId: string, inviteeUsername: string) {
+  return apiJson<RoomInvitation>(`/api/Rooms/${roomId}/invitations`, {
+    method: 'POST',
+    body: JSON.stringify({ inviteeUsername }),
+  })
+}
+
+export function getMyInvitations() {
+  return apiJson<RoomInvitation[]>('/api/me/invitations')
+}
+
+export function acceptInvitation(id: string) {
+  return apiJson<void>(`/api/invitations/${id}/accept`, { method: 'POST' })
+}
+
+export function rejectInvitation(id: string) {
+  return apiJson<void>(`/api/invitations/${id}/reject`, { method: 'POST' })
+}

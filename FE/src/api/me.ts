@@ -15,3 +15,10 @@ export function updateDisplayName(displayName: string) {
 export function deleteAccount() {
   return apiJson<void>('/api/Me', { method: 'DELETE' })
 }
+
+export function changePassword(currentPassword: string, newPassword: string) {
+  return apiJson<void>('/api/Me/password', {
+    method: 'POST',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  })
+}

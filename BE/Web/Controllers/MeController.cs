@@ -1,5 +1,7 @@
 using Application.Abstractions;
+using Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Web.Controllers;
@@ -10,10 +12,14 @@ namespace Web.Controllers;
 public class MeController : ControllerBase
 {
     private readonly IProfileService _profileService;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ICurrentUser _currentUser;
 
-    public MeController(IProfileService profileService)
+    public MeController(IProfileService profileService, UserManager<ApplicationUser> userManager, ICurrentUser currentUser)
     {
         _profileService = profileService;
+        _userManager = userManager;
+        _currentUser = currentUser;
     }
 
     [HttpGet]
@@ -38,6 +44,26 @@ public class MeController : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        if (!_currentUser.IsAuthenticated || _currentUser.UserId == null)
+            return Unauthorized();
+
+        if (string.IsNullOrWhiteSpace(request.CurrentPassword) || string.IsNullOrWhiteSpace(request.NewPassword))
+            return BadRequest(new { error = "Current and new passwords are required." });
+
+        var user = await _userManager.FindByIdAsync(_currentUser.UserId);
+        if (user == null)
+            return NotFound();
+
+        var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+        if (!result.Succeeded)
+            return BadRequest(new { errors = result.Errors.Select(e => e.Description).ToArray() });
+
+        return NoContent();
+    }
+
     [HttpDelete]
     public async Task<IActionResult> DeleteAccount()
     {
@@ -51,4 +77,5 @@ public class MeController : ControllerBase
 }
 
 public record UpdateDisplayNameRequest(string DisplayName);
+public record ChangePasswordRequest(string CurrentPassword, string NewPassword);
 

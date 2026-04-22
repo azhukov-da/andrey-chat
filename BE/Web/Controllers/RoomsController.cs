@@ -73,6 +73,33 @@ public class RoomsController : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("{id:guid}/leave")]
+    public async Task<IActionResult> Leave(Guid id)
+    {
+        var result = await _roomService.LeaveRoomAsync(id);
+
+        if (!result.IsSuccess)
+        {
+            if (result.Error?.Code == "Room.NotFound")
+                return NotFound(result.Error);
+            if (result.Error?.Code == "Room.OwnerCannotLeave")
+                return BadRequest(result.Error);
+            if (result.Error?.Code == "Authorization.Unauthorized")
+                return Unauthorized(result.Error);
+            return BadRequest(result.Error);
+        }
+
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/invitations")]
+    public async Task<IActionResult> Invite(Guid id, [FromBody] InviteUserRequest request)
+    {
+        var result = await _roomService.InviteUserAsync(id, request.InviteeUsername);
+        if (!result.IsSuccess) return MapError(result.Error);
+        return Ok(result.Value);
+    }
+
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateRoomRequest request)
     {
@@ -177,4 +204,5 @@ public class RoomsController : ControllerBase
 public record CreateRoomRequest(string Name, string? Description, RoomVisibility Visibility);
 public record UpdateRoomRequest(string Name, string? Description, RoomVisibility Visibility);
 public record BanMemberRequest(string? Reason);
+public record InviteUserRequest(string InviteeUsername);
 

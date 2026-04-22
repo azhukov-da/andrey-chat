@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRoom } from '@/hooks/useRoom'
 import { useUiStore } from '@/stores/uiStore'
-import { deleteRoom } from '@/api/rooms'
+import { deleteRoom, inviteUserToRoom, leaveRoom } from '@/api/rooms'
 import { RoomRole } from '@/types'
 import MessageList from './MessageList'
 import MessageComposer from './MessageComposer'
@@ -19,6 +19,35 @@ export default function ChatWindow() {
 
   const deleteMutation = useMutation({
     mutationFn: (roomId: string) => deleteRoom(roomId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['rooms', 'mine'] })
+      void queryClient.invalidateQueries({ queryKey: ['rooms', 'public'] })
+      navigate('/rooms')
+    },
+  })
+
+  const inviteMutation = useMutation({
+    mutationFn: ({ roomId, username }: { roomId: string; username: string }) => inviteUserToRoom(roomId, username),
+  })
+
+  const handleInvite = () => {
+    if (!room) return
+    const username = window.prompt('Enter username to invite:')
+    if (!username) return
+    inviteMutation.mutate(
+      { roomId: room.id, username: username.trim() },
+      {
+        onSuccess: () => window.alert(`Invitation sent to ${username}.`),
+        onError: (err: unknown) => {
+          const msg = err instanceof Error ? err.message : 'Failed to invite user.'
+          window.alert(msg)
+        },
+      },
+    )
+  }
+
+  const leaveMutation = useMutation({
+    mutationFn: (roomId: string) => leaveRoom(roomId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['rooms', 'mine'] })
       void queryClient.invalidateQueries({ queryKey: ['rooms', 'public'] })
@@ -49,12 +78,20 @@ export default function ChatWindow() {
 
   const isOwner = room.myRole === RoomRole.Owner
   const isAdmin = isOwner || room.myRole === RoomRole.Admin
+  const isMember = room.myRole != null
 
   const handleDelete = () => {
     if (!room) return
     const ok = window.confirm(`Delete room "${room.name}"? All messages will be permanently removed.`)
     if (!ok) return
     deleteMutation.mutate(room.id)
+  }
+
+  const handleLeave = () => {
+    if (!room) return
+    const ok = window.confirm(`Leave room "${room.name}"?`)
+    if (!ok) return
+    leaveMutation.mutate(room.id)
   }
 
   return (
@@ -68,10 +105,30 @@ export default function ChatWindow() {
           {isAdmin && (
             <button
               className="btn btn-sm btn-outline"
+              onClick={handleInvite}
+              disabled={inviteMutation.isPending}
+              data-testid="invite-user-button"
+            >
+              {inviteMutation.isPending ? 'Inviting…' : 'Invite user'}
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              className="btn btn-sm btn-outline"
               onClick={() => setManageOpen(true)}
               data-testid="manage-room-button"
             >
               Manage room
+            </button>
+          )}
+          {isMember && !isOwner && (
+            <button
+              className="btn btn-sm btn-outline"
+              onClick={handleLeave}
+              disabled={leaveMutation.isPending}
+              data-testid="leave-room-button"
+            >
+              {leaveMutation.isPending ? 'Leaving…' : 'Leave room'}
             </button>
           )}
           {isOwner && (

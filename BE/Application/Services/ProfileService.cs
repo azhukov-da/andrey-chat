@@ -9,11 +9,13 @@ public class ProfileService : IProfileService
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IFileStorage _fileStorage;
 
-    public ProfileService(IApplicationDbContext context, ICurrentUser currentUser)
+    public ProfileService(IApplicationDbContext context, ICurrentUser currentUser, IFileStorage fileStorage)
     {
         _context = context;
         _currentUser = currentUser;
+        _fileStorage = fileStorage;
     }
 
     public async Task<Result<UserProfileDto>> GetMeAsync()
@@ -69,6 +71,24 @@ public class ProfileService : IProfileService
 
         if (user.DeletedAt != null)
             return Errors.User.AlreadyDeleted;
+
+        // Cascade file deletion: remove attachments on disk for all messages authored by this user
+        var attachmentPaths = await _context.Attachments
+            .Where(a => a.Message.AuthorId == _currentUser.UserId)
+            .Select(a => a.StoragePath)
+            .ToListAsync();
+
+        foreach (var storagePath in attachmentPaths)
+        {
+            try
+            {
+                await _fileStorage.DeleteFileAsync(storagePath);
+            }
+            catch
+            {
+                // best-effort: continue on errors so DB deletion still proceeds
+            }
+        }
 
         user.DeletedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();

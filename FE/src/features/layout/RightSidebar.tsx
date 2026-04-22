@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router'
-import { useQuery } from '@tanstack/react-query'
-import { getMyRooms } from '@/api/rooms'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { acceptInvitation, getMyInvitations, getMyRooms, rejectInvitation } from '@/api/rooms'
 import { useUnreadStore } from '@/stores/unreadStore'
 import { useUiStore } from '@/stores/uiStore'
 import { RoomKind } from '@/types'
@@ -8,10 +8,30 @@ import PresenceDot from '@/features/chat/PresenceDot'
 import { useAuthStore } from '@/stores/authStore'
 
 export default function RightSidebar() {
+  const queryClient = useQueryClient()
   const { data: rooms = [] } = useQuery({ queryKey: ['rooms', 'mine'], queryFn: getMyRooms })
+  const { data: invitations = [] } = useQuery({
+    queryKey: ['invitations', 'mine'],
+    queryFn: getMyInvitations,
+    refetchInterval: 30000,
+  })
   const unreadCounts = useUnreadStore((s) => s.counts)
   const collapsed = useUiStore((s) => s.sidebarCollapsed)
   const me = useAuthStore((s) => s.me)
+
+  const acceptMut = useMutation({
+    mutationFn: (id: string) => acceptInvitation(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['invitations', 'mine'] })
+      void queryClient.invalidateQueries({ queryKey: ['rooms', 'mine'] })
+    },
+  })
+  const rejectMut = useMutation({
+    mutationFn: (id: string) => rejectInvitation(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['invitations', 'mine'] })
+    },
+  })
 
   const groupRooms = rooms.filter((r) => r.kind === RoomKind.Group)
   const directRooms = rooms.filter((r) => r.kind === RoomKind.Direct)
@@ -43,6 +63,43 @@ export default function RightSidebar() {
           })}
         </div>
       </div>
+
+      {invitations.length > 0 && (
+        <div className="collapse collapse-arrow">
+          <input type="checkbox" defaultChecked />
+          <div className="collapse-title font-semibold text-sm uppercase tracking-wide text-base-content/60 px-4 py-3">
+            Invitations ({invitations.length})
+          </div>
+          <div className="collapse-content px-0 pb-2">
+            {invitations.map((inv) => (
+              <div key={inv.id} className="px-4 py-2 text-sm border-b border-base-200" data-testid="invitation-item">
+                <div className="truncate">
+                  <span className="font-semibold"># {inv.roomName}</span>
+                </div>
+                <div className="text-xs text-base-content/60 truncate">from {inv.invitedByUserName}</div>
+                <div className="flex gap-1 mt-1">
+                  <button
+                    className="btn btn-xs btn-primary"
+                    onClick={() => acceptMut.mutate(inv.id)}
+                    disabled={acceptMut.isPending}
+                    data-testid="invitation-accept"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    className="btn btn-xs btn-ghost"
+                    onClick={() => rejectMut.mutate(inv.id)}
+                    disabled={rejectMut.isPending}
+                    data-testid="invitation-reject"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="collapse collapse-arrow">
         <input type="checkbox" defaultChecked />

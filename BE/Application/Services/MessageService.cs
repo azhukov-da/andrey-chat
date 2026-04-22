@@ -46,6 +46,25 @@ public class MessageService : IMessageService
         if (isBanned)
             return Errors.Room.Banned;
 
+        if (membership.Room.Kind == RoomKind.Direct)
+        {
+            var otherUserId = await _context.RoomMemberships
+                .Where(m => m.RoomId == roomId && m.UserId != _currentUser.UserId)
+                .Select(m => m.UserId)
+                .FirstOrDefaultAsync();
+
+            if (otherUserId != null)
+            {
+                var isBlocked = await _context.UserBlocks
+                    .AnyAsync(b =>
+                        (b.BlockerId == _currentUser.UserId && b.BlockedId == otherUserId) ||
+                        (b.BlockerId == otherUserId && b.BlockedId == _currentUser.UserId));
+
+                if (isBlocked)
+                    return Errors.Authorization.Forbidden;
+            }
+        }
+
         if (replyToMessageId.HasValue)
         {
             var replyToExists = await _context.Messages

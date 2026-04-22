@@ -41,6 +41,8 @@ export async function apiFetch(input: string, init: RequestInit = {}): Promise<R
 
   const headers = new Headers(init.headers)
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
+  const sessionId = localStorage.getItem('sessionId')
+  if (sessionId && !headers.has('X-Session-Id')) headers.set('X-Session-Id', sessionId)
   if (!headers.has('Content-Type') && !(init.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json')
   }

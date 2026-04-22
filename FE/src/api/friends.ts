@@ -16,6 +16,14 @@ export function acceptFriendRequest(userId: string) {
   return apiJson<void>(`/api/Friends/requests/${userId}/accept`, { method: 'POST' })
 }
 
+export function rejectFriendRequest(userId: string) {
+  return apiJson<void>(`/api/Friends/requests/${userId}/reject`, { method: 'POST' })
+}
+
+export function removeFriend(userId: string) {
+  return apiJson<void>(`/api/Friends/${userId}`, { method: 'DELETE' })
+}
+
 export function blockUser(userId: string) {
   return apiJson<void>(`/api/Friends/blocks/${userId}`, { method: 'POST' })
 }

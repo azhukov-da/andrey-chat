@@ -21,6 +21,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<Attachment> Attachments => Set<Attachment>();
     public DbSet<Friendship> Friendships => Set<Friendship>();
     public DbSet<UserBlock> UserBlocks => Set<UserBlock>();
+    public DbSet<UserSession> UserSessions => Set<UserSession>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -206,6 +207,25 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
                 .HasDefaultValueSql("NOW()");
 
             entity.ToTable(t => t.HasCheckConstraint("CK_Friendship_UserAId_LessThan_UserBId", "\"UserAId\" < \"UserBId\""));
+        });
+
+        builder.Entity<UserSession>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(e => e.DeviceInfo).HasMaxLength(200);
+            entity.Property(e => e.UserAgent).HasMaxLength(500);
+            entity.Property(e => e.IpAddress).HasMaxLength(64);
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("NOW()");
+            entity.Property(e => e.LastSeenAt).HasDefaultValueSql("NOW()");
+
+            entity.HasIndex(e => e.UserId);
         });
 
         builder.Entity<UserBlock>(entity =>

@@ -51,6 +51,8 @@ public static class Errors
         public static Error AlreadyFriends => new("Friendship.AlreadyFriends", "You are already friends with this user.");
         public static Error RequestAlreadyExists => new("Friendship.RequestAlreadyExists", "A friend request already exists.");
         public static Error CannotRequestSelf => new("Friendship.CannotRequestSelf", "You cannot send a friend request to yourself.");
+        public static Error NotAccepted => new("Friendship.NotAccepted", "You must be friends with this user to perform this action.");
+        public static Error CannotRejectOwnRequest => new("Friendship.CannotRejectOwnRequest", "You cannot reject your own friend request.");
     }
 
     public static class Block

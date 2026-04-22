@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getFriends, acceptFriendRequest, blockUser } from '@/api/friends'
+import { getFriends, acceptFriendRequest, blockUser, removeFriend, rejectFriendRequest } from '@/api/friends'
 import { openDirectChat } from '@/api/directChats'
 import { FriendshipStatus } from '@/types'
 import FriendRequestDialog from './FriendRequestDialog'
@@ -20,6 +20,16 @@ export default function FriendList() {
 
   const blockMutation = useMutation({
     mutationFn: (userId: string) => blockUser(userId),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['friends'] }),
+  })
+
+  const removeMutation = useMutation({
+    mutationFn: (userId: string) => removeFriend(userId),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['friends'] }),
+  })
+
+  const rejectMutation = useMutation({
+    mutationFn: (userId: string) => rejectFriendRequest(userId),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['friends'] }),
   })
 
@@ -52,6 +62,7 @@ export default function FriendList() {
                 </div>
                 <div className="flex gap-2">
                   <button className="btn btn-xs btn-success" onClick={() => acceptMutation.mutate(f.userId)}>Accept</button>
+                  <button className="btn btn-xs btn-ghost" onClick={() => rejectMutation.mutate(f.userId)}>Reject</button>
                   <button className="btn btn-xs btn-error btn-outline" onClick={() => blockMutation.mutate(f.userId)}>Block</button>
                 </div>
               </div>
@@ -73,13 +84,29 @@ export default function FriendList() {
                 <span>{f.displayName ?? f.userName}</span>
                 <span className="text-xs text-base-content/50">@{f.userName}</span>
               </div>
-              <button
-                className="btn btn-xs btn-outline"
-                onClick={() => dmMutation.mutate(f.userName)}
-                disabled={dmMutation.isPending}
-              >
-                Message
-              </button>
+              <div className="flex gap-2">
+                <button
+                  className="btn btn-xs btn-outline"
+                  onClick={() => dmMutation.mutate(f.userName)}
+                  disabled={dmMutation.isPending}
+                >
+                  Message
+                </button>
+                <button
+                  className="btn btn-xs btn-error btn-outline"
+                  onClick={() => blockMutation.mutate(f.userId)}
+                >
+                  Block
+                </button>
+                <button
+                  className="btn btn-xs btn-ghost"
+                  onClick={() => {
+                    if (confirm('Remove this friend?')) removeMutation.mutate(f.userId)
+                  }}
+                >
+                  Remove
+                </button>
+              </div>
             </div>
           ))}
         </div>
