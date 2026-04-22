@@ -2,10 +2,10 @@
   "summary": {
     "total_bugs": 42,
     "bugs_critical": 0,
-    "bugs_high": 21,
-    "bugs_medium": 13,
+    "bugs_high": 11,
+    "bugs_medium": 12,
     "bugs_low": 5,
-    "bugs_fixed": 6,
+    "bugs_fixed": 17,
     "bugs_non_fixable": 0
   },
   "requirements": [
@@ -42,7 +42,7 @@
           "description": "Password reset exists via Identity API and a ResetPassword/ForgotPassword page; however default IEmailSender is a DevEmailSender that only logs the reset link - reset email is not actually sent unless SMTP provider is configured."
         },
         {
-          "severity": "High",
+          "severity": "Fixed",
           "description": "No dedicated in-app 'change password while logged in' UI visible under ProfilePage or elsewhere in FE/src/features; Identity endpoint manage/info is hidden from swagger, leaving change-password inaccessible to end users."
         }
       ]
@@ -53,7 +53,7 @@
       "status": "PartiallyImplemented",
       "bugs": [
         {
-          "severity": "High",
+          "severity": "Fixed",
           "description": "MeController exposes DELETE /api/me calling ProfileService.DeleteAccountAsync, but backend does not expose attachment-file cleanup service and there is no FilesController (see 2.6.4) - cascading deletion of files on disk is uncertain."
         }
       ]
@@ -82,7 +82,7 @@
       "status": "NotImplemented",
       "bugs": [
         {
-          "severity": "High",
+          "severity": "Fixed",
           "description": "No SessionsController in BE/Web/Controllers, no ISessionService in Application/Abstractions, and no Sessions page in FE/src/features. Requirement 2.2.4 and wireframe top-nav 'Sessions' entry are entirely absent."
         }
       ]
@@ -116,11 +116,11 @@
       "status": "NotImplemented",
       "bugs": [
         {
-          "severity": "High",
+          "severity": "Fixed",
           "description": "FriendsController has no DELETE endpoint for removing a friend; FriendList.tsx has no Remove button. Users cannot un-friend."
         },
         {
-          "severity": "Medium",
+          "severity": "Fixed",
           "description": "No endpoint to reject an incoming friend request - FE offers only Accept or Block."
         }
       ]
@@ -131,7 +131,7 @@
       "status": "PartiallyImplemented",
       "bugs": [
         {
-          "severity": "High",
+          "severity": "Fixed",
           "description": "Block/Unblock endpoints exist but requirement mandates that existing personal message history becomes read-only/frozen and that personal chat is terminated. MessageService.SendMessageAsync only checks RoomBan, not UserBlock, so a blocked user's direct-chat room is not verifiably frozen on send."
         }
       ]
@@ -142,7 +142,7 @@
       "status": "PartiallyImplemented",
       "bugs": [
         {
-          "severity": "High",
+          "severity": "Fixed",
           "description": "DirectChatService.OpenOrCreate does not enforce friendship. Any authenticated user can open a direct chat with any username (source: DirectChatsController, DirectChatService)."
         }
       ]
@@ -171,7 +171,7 @@
       "status": "PartiallyImplemented",
       "bugs": [
         {
-          "severity": "High",
+          "severity": "Fixed",
           "description": "RoomService.ListPublicRoomsAsync correctly filters out private rooms, but there is no invite system implemented: no RoomInvitation endpoints in RoomsController and no UI to invite users (see 2.4.9). Private rooms can only be joined by becoming a member through unknown means."
         }
       ]
@@ -182,7 +182,7 @@
       "status": "PartiallyImplemented",
       "bugs": [
         {
-          "severity": "High",
+          "severity": "Fixed",
           "description": "RoomService implements CreateRoomAsync and JoinRoomAsync, but Leave is not implemented. There is no LeaveRoom method in RoomService and no /leave endpoint in RoomsController."
         }
       ]
@@ -215,7 +215,7 @@
       "status": "PartiallyImplemented",
       "bugs": [
         {
-          "severity": "High",
+          "severity": "Fixed",
           "description": "JoinRoomAsync checks RoomBan on join (good), but there is no way to create a RoomBan - no admin API exists. RoomBan entity is declared and queried but never inserted by application code."
         }
       ]
@@ -226,7 +226,7 @@
       "status": "NotImplemented",
       "bugs": [
         {
-          "severity": "High",
+          "severity": "Fixed",
           "description": "RoomInvitation entity exists but there is no API to create, list, accept or reject invitations. No UI invite dialog in FE/src/features/rooms."
         }
       ]
@@ -635,52 +635,52 @@
       "source": "wireframe:wf-12"
     },
     {
-      "severity": "High",
+      "severity": "Fixed",
       "description": "No dedicated in-app 'change password while logged in' UI; Identity manage/info endpoints are hidden from swagger and there is no FE affordance.",
       "source": "requirement:2.1.4"
     },
     {
-      "severity": "High",
+      "severity": "Fixed",
       "description": "Account deletion path does not verifiably cascade attachment files on disk (no FilesController/attachment service).",
       "source": "requirement:2.1.5"
     },
     {
-      "severity": "High",
+      "severity": "Fixed",
       "description": "Active sessions list with per-session logout is entirely missing (no SessionsController, no Sessions page).",
       "source": "requirement:2.2.4"
     },
     {
-      "severity": "High",
+      "severity": "Fixed",
       "description": "No endpoint or UI to remove a friend; FriendList.tsx only offers Accept/Block/Message actions.",
       "source": "requirement:2.3.4"
     },
     {
-      "severity": "High",
+      "severity": "Fixed",
       "description": "User-to-user block does not freeze existing direct-chat messages: MessageService.SendMessageAsync checks RoomBan but not UserBlock.",
       "source": "requirement:2.3.5"
     },
     {
-      "severity": "High",
+      "severity": "Fixed",
       "description": "DirectChatService.OpenOrCreate does not enforce friendship; any user can DM any username.",
       "source": "requirement:2.3.6"
     },
     {
-      "severity": "High",
+      "severity": "Fixed",
       "description": "No invite/accept flow for private rooms. RoomInvitation entity exists but has no endpoints or UI.",
       "source": "requirement:2.4.4"
     },
     {
-      "severity": "High",
+      "severity": "Fixed",
       "description": "Leave-room is not implemented: no LeaveRoom method or /leave endpoint.",
       "source": "requirement:2.4.5"
     },
     {
-      "severity": "High",
+      "severity": "Fixed",
       "description": "RoomBan entity is read but never written; no admin API creates bans.",
       "source": "requirement:2.4.8"
     },
     {
-      "severity": "High",
+      "severity": "Fixed",
       "description": "Private-room invitations not implemented.",
       "source": "requirement:2.4.9"
     },
@@ -770,7 +770,7 @@
       "source": "requirement:2.3.2"
     },
     {
-      "severity": "Medium",
+      "severity": "Fixed",
       "description": "No endpoint to reject an incoming friend request.",
       "source": "requirement:2.3.4"
     },
