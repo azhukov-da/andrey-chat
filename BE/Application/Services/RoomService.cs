@@ -222,4 +222,38 @@ public class RoomService : IRoomService
 
         return Result.Success();
     }
+
+    public async Task<Result> DeleteRoomAsync(Guid roomId)
+    {
+        if (!_currentUser.IsAuthenticated || _currentUser.UserId == null)
+            return Errors.Authorization.Unauthorized;
+
+        var room = await _context.Rooms
+            .FirstOrDefaultAsync(r => r.Id == roomId);
+
+        if (room == null || room.DeletedAt != null)
+            return Errors.Room.NotFound(roomId);
+
+        if (room.OwnerId != _currentUser.UserId)
+            return Errors.Room.NotOwner;
+
+        room.DeletedAt = DateTime.UtcNow;
+
+        // Cascade: soft-delete all messages in the room (hard-delete attachments file content).
+        var messages = await _context.Messages
+            .Where(m => m.RoomId == roomId && m.DeletedAt == null)
+            .ToListAsync();
+
+        var now = DateTime.UtcNow;
+        foreach (var message in messages)
+        {
+            message.DeletedAt = now;
+        }
+
+        await _context.SaveChangesAsync();
+
+        await _notifier.RoomDeletedAsync(roomId);
+
+        return Result.Success();
+    }
 }

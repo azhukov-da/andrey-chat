@@ -25,3 +25,7 @@ export function createRoom(name: string, description: string | undefined, visibi
 export function joinRoom(id: string) {
   return apiJson<void>(`/api/Rooms/${id}/join`, { method: 'POST' })
 }
+
+export function deleteRoom(id: string) {
+  return apiJson<void>(`/api/Rooms/${id}`, { method: 'DELETE' })
+}

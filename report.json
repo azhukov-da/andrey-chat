@@ -1,10 +1,11 @@
 {
   "summary": {
     "total_bugs": 42,
-    "bugs_critical": 3,
+    "bugs_critical": 5,
     "bugs_high": 21,
     "bugs_medium": 13,
-    "bugs_low": 5
+    "bugs_low": 5,
+    "bugs_fixed": 1
   },
   "requirements": [
     {
@@ -191,7 +192,7 @@
       "status": "NotImplemented",
       "bugs": [
         {
-          "severity": "Critical",
+          "severity": "Fixed",
           "description": "Delete-room is not implemented: no DeleteRoomAsync in RoomService, no DELETE endpoint in RoomsController, despite Room entity having DeletedAt soft-delete column. Owners cannot delete their own rooms."
         }
       ]
@@ -603,7 +604,7 @@
   ],
   "all_bugs": [
     {
-      "severity": "Critical",
+      "severity": "Fixed",
       "description": "Delete-room is not implemented: no DeleteRoomAsync in RoomService, no DELETE endpoint in RoomsController, despite Room entity having DeletedAt soft-delete column. Owners cannot delete their own rooms.",
       "source": "requirement:2.4.6"
     },

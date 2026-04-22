@@ -66,9 +66,26 @@ public class RoomsController : ControllerBase
     public async Task<IActionResult> Join(Guid id)
     {
         var result = await _roomService.JoinRoomAsync(id);
-        
+
         if (!result.IsSuccess)
             return BadRequest(result.Error);
+
+        return NoContent();
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var result = await _roomService.DeleteRoomAsync(id);
+
+        if (!result.IsSuccess)
+        {
+            if (result.Error?.Code == "Room.NotFound")
+                return NotFound(result.Error);
+            if (result.Error?.Code == "Room.NotOwner" || result.Error?.Code == "Authorization.Unauthorized")
+                return Forbid();
+            return BadRequest(result.Error);
+        }
 
         return NoContent();
     }
