@@ -89,7 +89,74 @@ public class RoomsController : ControllerBase
 
         return NoContent();
     }
+
+    [HttpGet("{id:guid}/members")]
+    public async Task<IActionResult> ListMembers(Guid id)
+    {
+        var result = await _roomService.ListMembersAsync(id);
+        if (!result.IsSuccess) return MapError(result.Error);
+        return Ok(result.Value);
+    }
+
+    [HttpPost("{id:guid}/members/{userId}/make-admin")]
+    public async Task<IActionResult> MakeAdmin(Guid id, string userId)
+    {
+        var result = await _roomService.MakeAdminAsync(id, userId);
+        if (!result.IsSuccess) return MapError(result.Error);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/members/{userId}/remove-admin")]
+    public async Task<IActionResult> RemoveAdmin(Guid id, string userId)
+    {
+        var result = await _roomService.RemoveAdminAsync(id, userId);
+        if (!result.IsSuccess) return MapError(result.Error);
+        return NoContent();
+    }
+
+    [HttpDelete("{id:guid}/members/{userId}")]
+    public async Task<IActionResult> RemoveMember(Guid id, string userId)
+    {
+        var result = await _roomService.RemoveMemberAsync(id, userId);
+        if (!result.IsSuccess) return MapError(result.Error);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/bans/{userId}")]
+    public async Task<IActionResult> BanMember(Guid id, string userId, [FromBody] BanMemberRequest? request)
+    {
+        var result = await _roomService.BanMemberAsync(id, userId, request?.Reason);
+        if (!result.IsSuccess) return MapError(result.Error);
+        return NoContent();
+    }
+
+    [HttpDelete("{id:guid}/bans/{userId}")]
+    public async Task<IActionResult> UnbanMember(Guid id, string userId)
+    {
+        var result = await _roomService.UnbanMemberAsync(id, userId);
+        if (!result.IsSuccess) return MapError(result.Error);
+        return NoContent();
+    }
+
+    [HttpGet("{id:guid}/bans")]
+    public async Task<IActionResult> ListBanned(Guid id)
+    {
+        var result = await _roomService.ListBannedAsync(id);
+        if (!result.IsSuccess) return MapError(result.Error);
+        return Ok(result.Value);
+    }
+
+    private IActionResult MapError(Application.Common.Error? error)
+    {
+        if (error == null) return BadRequest();
+        if (error.Code == "Room.NotFound") return NotFound(error);
+        if (error.Code == "Authorization.Unauthorized") return Unauthorized(error);
+        if (error.Code == "Authorization.Forbidden" || error.Code == "Room.NotOwner" || error.Code == "Room.NotOwnerOrAdmin")
+            return StatusCode(403, error);
+        return BadRequest(error);
+    }
 }
 
 public record CreateRoomRequest(string Name, string? Description, RoomVisibility Visibility);
+public record BanMemberRequest(string? Reason);
 

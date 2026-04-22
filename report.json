@@ -1,11 +1,11 @@
 {
   "summary": {
     "total_bugs": 42,
-    "bugs_critical": 5,
+    "bugs_critical": 4,
     "bugs_high": 21,
     "bugs_medium": 13,
     "bugs_low": 5,
-    "bugs_fixed": 1
+    "bugs_fixed": 2
   },
   "requirements": [
     {
@@ -203,7 +203,7 @@
       "status": "NotImplemented",
       "bugs": [
         {
-          "severity": "Critical",
+          "severity": "Fixed",
           "description": "No admin moderation endpoints exist. RoomsController lacks MakeAdmin, RemoveAdmin, RemoveMember, BanMember, UnbanMember, ListBanned. RoomService implements none of these, so requirement 2.4.7 is entirely absent from the backend."
         }
       ]
@@ -609,7 +609,7 @@
       "source": "requirement:2.4.6"
     },
     {
-      "severity": "Critical",
+      "severity": "Fixed",
       "description": "No admin moderation endpoints exist. RoomsController lacks MakeAdmin, RemoveAdmin, RemoveMember, BanMember, UnbanMember, ListBanned. Requirement 2.4.7 is entirely absent from the backend.",
       "source": "requirement:2.4.7"
     },

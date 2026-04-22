@@ -12,4 +12,11 @@ public interface IRoomService
     Task<Result<RoomDto>> CreateRoomAsync(string name, string? description, RoomVisibility visibility);
     Task<Result> JoinRoomAsync(Guid roomId);
     Task<Result> DeleteRoomAsync(Guid roomId);
+    Task<Result<List<RoomMemberDto>>> ListMembersAsync(Guid roomId);
+    Task<Result> MakeAdminAsync(Guid roomId, string targetUserId);
+    Task<Result> RemoveAdminAsync(Guid roomId, string targetUserId);
+    Task<Result> RemoveMemberAsync(Guid roomId, string targetUserId);
+    Task<Result> BanMemberAsync(Guid roomId, string targetUserId, string? reason);
+    Task<Result> UnbanMemberAsync(Guid roomId, string targetUserId);
+    Task<Result<List<RoomBanDto>>> ListBannedAsync(Guid roomId);
 }

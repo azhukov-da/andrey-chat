@@ -256,4 +256,187 @@ public class RoomService : IRoomService
 
         return Result.Success();
     }
+
+    public async Task<Result<List<RoomMemberDto>>> ListMembersAsync(Guid roomId)
+    {
+        if (!_currentUser.IsAuthenticated || _currentUser.UserId == null)
+            return Errors.Authorization.Unauthorized;
+
+        var room = await _context.Rooms.FirstOrDefaultAsync(r => r.Id == roomId && r.DeletedAt == null);
+        if (room == null)
+            return Errors.Room.NotFound(roomId);
+
+        var isMember = await _context.RoomMemberships
+            .AnyAsync(m => m.RoomId == roomId && m.UserId == _currentUser.UserId);
+        if (!isMember)
+            return Errors.Room.NotMember;
+
+        var members = await _context.RoomMemberships
+            .Where(m => m.RoomId == roomId)
+            .Select(m => new RoomMemberDto
+            {
+                UserId = m.UserId,
+                UserName = m.User.UserName ?? string.Empty,
+                DisplayName = m.User.DisplayName,
+                Role = m.Role,
+                JoinedAt = m.JoinedAt
+            })
+            .ToListAsync();
+
+        return members;
+    }
+
+    private async Task<(Result? error, RoomMembership? callerMembership, Room? room)> RequireAdminAsync(Guid roomId)
+    {
+        if (!_currentUser.IsAuthenticated || _currentUser.UserId == null)
+            return (Errors.Authorization.Unauthorized, null, null);
+
+        var room = await _context.Rooms.FirstOrDefaultAsync(r => r.Id == roomId && r.DeletedAt == null);
+        if (room == null)
+            return (Errors.Room.NotFound(roomId), null, null);
+
+        var caller = await _context.RoomMemberships
+            .FirstOrDefaultAsync(m => m.RoomId == roomId && m.UserId == _currentUser.UserId);
+
+        if (caller == null || (caller.Role != RoomRole.Admin && caller.Role != RoomRole.Owner))
+            return (Errors.Room.NotOwnerOrAdmin, null, null);
+
+        return (null, caller, room);
+    }
+
+    public async Task<Result> MakeAdminAsync(Guid roomId, string targetUserId)
+    {
+        var (error, caller, room) = await RequireAdminAsync(roomId);
+        if (error != null) return error;
+
+        var target = await _context.RoomMemberships
+            .FirstOrDefaultAsync(m => m.RoomId == roomId && m.UserId == targetUserId);
+        if (target == null) return Errors.Room.NotMember;
+
+        if (target.Role == RoomRole.Owner) return Errors.Room.NotOwnerOrAdmin;
+        if (target.Role == RoomRole.Admin) return Result.Success();
+
+        target.Role = RoomRole.Admin;
+        await _context.SaveChangesAsync();
+        await _notifier.RoomMembershipChangedAsync(roomId, targetUserId, "promoted");
+        return Result.Success();
+    }
+
+    public async Task<Result> RemoveAdminAsync(Guid roomId, string targetUserId)
+    {
+        var (error, caller, room) = await RequireAdminAsync(roomId);
+        if (error != null) return error;
+
+        var target = await _context.RoomMemberships
+            .FirstOrDefaultAsync(m => m.RoomId == roomId && m.UserId == targetUserId);
+        if (target == null) return Errors.Room.NotMember;
+
+        // Owner cannot lose admin
+        if (target.Role == RoomRole.Owner) return Errors.Room.NotOwner;
+
+        // Only owner may remove another admin (per requirement: admins may remove other admins except the owner; owner may remove any admin)
+        // We'll allow admins to remove other admins too (requirement 2.4.7 explicitly permits that).
+        if (target.Role != RoomRole.Admin) return Result.Success();
+
+        target.Role = RoomRole.Member;
+        await _context.SaveChangesAsync();
+        await _notifier.RoomMembershipChangedAsync(roomId, targetUserId, "demoted");
+        return Result.Success();
+    }
+
+    public async Task<Result> RemoveMemberAsync(Guid roomId, string targetUserId)
+    {
+        var (error, caller, room) = await RequireAdminAsync(roomId);
+        if (error != null) return error;
+
+        var target = await _context.RoomMemberships
+            .FirstOrDefaultAsync(m => m.RoomId == roomId && m.UserId == targetUserId);
+        if (target == null) return Errors.Room.NotMember;
+
+        if (target.Role == RoomRole.Owner) return Errors.Room.NotOwner;
+
+        // Admins cannot remove other admins unless caller is Owner
+        if (target.Role == RoomRole.Admin && caller!.Role != RoomRole.Owner)
+            return Errors.Authorization.Forbidden;
+
+        _context.RoomMemberships.Remove(target);
+        await _context.SaveChangesAsync();
+
+        await _notifier.RoomMembershipChangedAsync(roomId, targetUserId, "removed");
+        return Result.Success();
+    }
+
+    public async Task<Result> BanMemberAsync(Guid roomId, string targetUserId, string? reason)
+    {
+        var (error, caller, room) = await RequireAdminAsync(roomId);
+        if (error != null) return error;
+
+        if (targetUserId == room!.OwnerId) return Errors.Room.NotOwner;
+
+        var target = await _context.RoomMemberships
+            .FirstOrDefaultAsync(m => m.RoomId == roomId && m.UserId == targetUserId);
+
+        if (target != null)
+        {
+            if (target.Role == RoomRole.Owner) return Errors.Room.NotOwner;
+            if (target.Role == RoomRole.Admin && caller!.Role != RoomRole.Owner)
+                return Errors.Authorization.Forbidden;
+
+            _context.RoomMemberships.Remove(target);
+        }
+
+        var existingBan = await _context.RoomBans
+            .FirstOrDefaultAsync(b => b.RoomId == roomId && b.BannedUserId == targetUserId);
+        if (existingBan == null)
+        {
+            _context.RoomBans.Add(new RoomBan
+            {
+                RoomId = roomId,
+                BannedUserId = targetUserId,
+                BannedByUserId = _currentUser.UserId!,
+                Reason = reason,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        await _context.SaveChangesAsync();
+        await _notifier.RoomMembershipChangedAsync(roomId, targetUserId, "banned");
+        return Result.Success();
+    }
+
+    public async Task<Result> UnbanMemberAsync(Guid roomId, string targetUserId)
+    {
+        var (error, caller, room) = await RequireAdminAsync(roomId);
+        if (error != null) return error;
+
+        var ban = await _context.RoomBans
+            .FirstOrDefaultAsync(b => b.RoomId == roomId && b.BannedUserId == targetUserId);
+        if (ban == null) return Result.Success();
+
+        _context.RoomBans.Remove(ban);
+        await _context.SaveChangesAsync();
+        await _notifier.RoomMembershipChangedAsync(roomId, targetUserId, "unbanned");
+        return Result.Success();
+    }
+
+    public async Task<Result<List<RoomBanDto>>> ListBannedAsync(Guid roomId)
+    {
+        var (error, caller, room) = await RequireAdminAsync(roomId);
+        if (error != null) return error.Error!;
+
+        var bans = await _context.RoomBans
+            .Where(b => b.RoomId == roomId)
+            .Select(b => new RoomBanDto
+            {
+                BannedUserId = b.BannedUserId,
+                BannedUserName = b.BannedUser.UserName ?? string.Empty,
+                BannedByUserId = b.BannedByUserId,
+                BannedByUserName = b.BannedByUser.UserName ?? string.Empty,
+                Reason = b.Reason,
+                CreatedAt = b.CreatedAt
+            })
+            .ToListAsync();
+
+        return bans;
+    }
 }
