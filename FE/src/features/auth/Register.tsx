@@ -13,7 +13,7 @@ export default function Register() {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isSubmitted },
   } = useForm<RegisterForm>({ resolver: zodResolver(RegisterFormSchema) })
 
   const onSubmit = async (data: RegisterForm) => {
@@ -36,18 +36,18 @@ export default function Register() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
             <div className="form-control">
               <label className="label"><span className="label-text">Email</span></label>
-              <input type="email" className="input input-bordered" {...register('email')} />
-              {errors.email && <label className="label"><span className="label-text-alt text-error">{errors.email.message}</span></label>}
+              <input type="email" className={`input input-bordered${isSubmitted && errors.email ? ' input-error' : ''}`} {...register('email')} />
+              {isSubmitted && errors.email && <label className="label"><span className="label-text-alt text-error">{errors.email.message}</span></label>}
             </div>
             <div className="form-control">
               <label className="label"><span className="label-text">Password</span></label>
-              <input type="password" className="input input-bordered" {...register('password')} />
-              {errors.password && <label className="label"><span className="label-text-alt text-error">{errors.password.message}</span></label>}
+              <input type="password" className={`input input-bordered${isSubmitted && errors.password ? ' input-error' : ''}`} {...register('password')} />
+              {isSubmitted && errors.password && <label className="label"><span className="label-text-alt text-error">{errors.password.message}</span></label>}
             </div>
             <div className="form-control">
               <label className="label"><span className="label-text">Confirm Password</span></label>
-              <input type="password" className="input input-bordered" {...register('confirmPassword')} />
-              {errors.confirmPassword && <label className="label"><span className="label-text-alt text-error">{errors.confirmPassword.message}</span></label>}
+              <input type="password" className={`input input-bordered${isSubmitted && errors.confirmPassword ? ' input-error' : ''}`} {...register('confirmPassword')} />
+              {isSubmitted && errors.confirmPassword && <label className="label"><span className="label-text-alt text-error">{errors.confirmPassword.message}</span></label>}
             </div>
             <button type="submit" className="btn btn-primary w-full" disabled={isSubmitting}>
               {isSubmitting ? <span className="loading loading-spinner" /> : 'Create Account'}

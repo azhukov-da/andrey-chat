@@ -109,11 +109,14 @@ export type CursorPaged<T> = { items: T[]; nextCursor?: string | null; hasMore: 
 export const RegisterFormSchema = z
   .object({
     email: z.string().email('Invalid email'),
-    password: z
-      .string()
-      .min(6, 'At least 6 characters')
-      .regex(/[A-Z]/, 'Needs an uppercase letter')
-      .regex(/[0-9]/, 'Needs a digit'),
+    password: z.string().superRefine((val, ctx) => {
+      const missing: string[] = []
+      if (val.length < 6) missing.push('at least 6 characters')
+      if (!/[A-Z]/.test(val)) missing.push('an uppercase letter')
+      if (!/[0-9]/.test(val)) missing.push('a digit')
+      if (missing.length > 0)
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Password needs: ${missing.join(', ')}` })
+    }),
     confirmPassword: z.string(),
   })
   .refine((d) => d.password === d.confirmPassword, {
