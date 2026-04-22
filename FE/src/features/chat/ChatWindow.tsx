@@ -4,9 +4,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRoom } from '@/hooks/useRoom'
 import { useUiStore } from '@/stores/uiStore'
 import { deleteRoom, inviteUserToRoom, leaveRoom } from '@/api/rooms'
-import { RoomRole } from '@/types'
+import { RoomKind, RoomRole } from '@/types'
 import MessageList from './MessageList'
 import MessageComposer from './MessageComposer'
+import RoomMembersPanel from './RoomMembersPanel'
 import ManageRoomDialog from '@/features/rooms/ManageRoomDialog'
 
 export default function ChatWindow() {
@@ -94,57 +95,69 @@ export default function ChatWindow() {
     leaveMutation.mutate(room.id)
   }
 
+  const isGroupRoom = room.kind === RoomKind.Group
+
   return (
-    <div className="flex flex-col h-full">
-      <div className="border-b border-base-300 px-6 py-3 bg-base-100 flex items-center justify-between">
-        <div>
-          <h2 className="font-bold text-lg"># {room.name}</h2>
-          {room.description && <p className="text-sm text-base-content/60">{room.description}</p>}
+    <div className="flex h-full">
+      <div className="flex flex-col flex-1 min-w-0">
+        <div className="border-b border-base-300 px-6 py-3 bg-base-100 flex items-center justify-between">
+          <div>
+            <h2 className="font-bold text-lg"># {room.name}</h2>
+            {room.description && <p className="text-sm text-base-content/60">{room.description}</p>}
+          </div>
+          <div className="flex gap-2">
+            {isAdmin && (
+              <button
+                className="btn btn-sm btn-outline"
+                onClick={handleInvite}
+                disabled={inviteMutation.isPending}
+                data-testid="invite-user-button"
+              >
+                {inviteMutation.isPending ? 'Inviting…' : 'Invite user'}
+              </button>
+            )}
+            {isAdmin && (
+              <button
+                className="btn btn-sm btn-outline"
+                onClick={() => setManageOpen(true)}
+                data-testid="manage-room-button"
+              >
+                Manage room
+              </button>
+            )}
+            {isMember && !isOwner && (
+              <button
+                className="btn btn-sm btn-outline"
+                onClick={handleLeave}
+                disabled={leaveMutation.isPending}
+                data-testid="leave-room-button"
+              >
+                {leaveMutation.isPending ? 'Leaving…' : 'Leave room'}
+              </button>
+            )}
+            {isOwner && (
+              <button
+                className="btn btn-sm btn-error btn-outline"
+                onClick={handleDelete}
+                disabled={deleteMutation.isPending}
+                data-testid="delete-room-button"
+              >
+                {deleteMutation.isPending ? 'Deleting…' : 'Delete room'}
+              </button>
+            )}
+          </div>
         </div>
-        <div className="flex gap-2">
-          {isAdmin && (
-            <button
-              className="btn btn-sm btn-outline"
-              onClick={handleInvite}
-              disabled={inviteMutation.isPending}
-              data-testid="invite-user-button"
-            >
-              {inviteMutation.isPending ? 'Inviting…' : 'Invite user'}
-            </button>
-          )}
-          {isAdmin && (
-            <button
-              className="btn btn-sm btn-outline"
-              onClick={() => setManageOpen(true)}
-              data-testid="manage-room-button"
-            >
-              Manage room
-            </button>
-          )}
-          {isMember && !isOwner && (
-            <button
-              className="btn btn-sm btn-outline"
-              onClick={handleLeave}
-              disabled={leaveMutation.isPending}
-              data-testid="leave-room-button"
-            >
-              {leaveMutation.isPending ? 'Leaving…' : 'Leave room'}
-            </button>
-          )}
-          {isOwner && (
-            <button
-              className="btn btn-sm btn-error btn-outline"
-              onClick={handleDelete}
-              disabled={deleteMutation.isPending}
-              data-testid="delete-room-button"
-            >
-              {deleteMutation.isPending ? 'Deleting…' : 'Delete room'}
-            </button>
-          )}
-        </div>
+        <MessageList roomId={room.id} />
+        <MessageComposer roomId={room.id} />
       </div>
-      <MessageList roomId={room.id} />
-      <MessageComposer roomId={room.id} />
+      {isGroupRoom && isMember && (
+        <RoomMembersPanel
+          room={room}
+          isAdmin={isAdmin}
+          onInvite={handleInvite}
+          onManage={() => setManageOpen(true)}
+        />
+      )}
       {manageOpen && <ManageRoomDialog room={room} onClose={() => setManageOpen(false)} />}
     </div>
   )

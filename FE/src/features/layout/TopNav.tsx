@@ -19,11 +19,12 @@ export default function TopNav({ me }: Props) {
       <div className="navbar-center">
         <ul className="menu menu-horizontal px-1 gap-1">
           <li>
-            <NavLink to="/rooms" className={({ isActive }) => isActive ? 'active' : ''}>
-              Public
+            <NavLink to="/rooms" end className={({ isActive }) => isActive ? 'active' : ''}>
+              Public Rooms
               {total > 0 && <span className="badge badge-primary badge-sm">{total}</span>}
             </NavLink>
           </li>
+          <li><NavLink to="/rooms/private" className={({ isActive }) => isActive ? 'active' : ''}>Private Rooms</NavLink></li>
           <li><NavLink to="/contacts" className={({ isActive }) => isActive ? 'active' : ''}>Contacts</NavLink></li>
           <li><NavLink to="/profile" className={({ isActive }) => isActive ? 'active' : ''}>Profile</NavLink></li>
           <li><NavLink to="/sessions" className={({ isActive }) => isActive ? 'active' : ''}>Sessions</NavLink></li>

@@ -2,10 +2,10 @@
   "summary": {
     "total_bugs": 42,
     "bugs_critical": 0,
-    "bugs_high": 11,
+    "bugs_high": 0,
     "bugs_medium": 12,
     "bugs_low": 5,
-    "bugs_fixed": 17,
+    "bugs_fixed": 28,
     "bugs_non_fixable": 0
   },
   "requirements": [
@@ -243,7 +243,7 @@
       "status": "PartiallyImplemented",
       "bugs": [
         {
-          "severity": "High",
+          "severity": "Fixed",
           "description": "Attachments are not implemented: no AttachmentsController, and MessageComposer.tsx paste handler explicitly contains a placeholder comment 'attachment upload placeholder - currently just show filename' that inserts '[attach: name]' into text. There is no explicit attach button."
         },
         {
@@ -298,7 +298,7 @@
       "status": "NotImplemented",
       "bugs": [
         {
-          "severity": "High",
+          "severity": "Fixed",
           "description": "MessageComposer lacks an attach button; paste handler merely inserts filename text, does not upload."
         }
       ]
@@ -309,7 +309,7 @@
       "status": "NotImplemented",
       "bugs": [
         {
-          "severity": "High",
+          "severity": "Fixed",
           "description": "Attachment entity defines FileName and Comment columns but no upload endpoint exists to populate them."
         }
       ]
@@ -320,7 +320,7 @@
       "status": "NotImplemented",
       "bugs": [
         {
-          "severity": "High",
+          "severity": "Fixed",
           "description": "No FilesController; no authenticated download endpoint. Files cannot be served and access control is moot."
         }
       ]
@@ -382,7 +382,7 @@
       "status": "PartiallyImplemented",
       "bugs": [
         {
-          "severity": "High",
+          "severity": "Fixed",
           "description": "LocalFileStorage abstraction exists but no endpoint enforces the 20MB / 3MB limits. Feature cannot be exercised."
         }
       ]
@@ -399,7 +399,7 @@
       "status": "PartiallyImplemented",
       "bugs": [
         {
-          "severity": "High",
+          "severity": "Fixed",
           "description": "Admin/owner permissions and room bans cannot be exercised because admin endpoints are missing (see 2.4.7, 2.4.8)."
         }
       ]
@@ -416,7 +416,7 @@
       "status": "PartiallyImplemented",
       "bugs": [
         {
-          "severity": "High",
+          "severity": "Fixed",
           "description": "No members/context panel is rendered on the right side when a room is open. ChatWindow.tsx only renders header + MessageList + MessageComposer; no members list, presence column, or room-info panel exists (wireframe shows Room info, Owner, Admins, Members, Invite user, Manage room)."
         },
         {
@@ -437,7 +437,7 @@
       "status": "PartiallyImplemented",
       "bugs": [
         {
-          "severity": "High",
+          "severity": "Fixed",
           "description": "Attachment button missing; emoji picker missing (see 2.5.2)."
         }
       ]
@@ -512,7 +512,7 @@
       "status": "PartiallyImplemented",
       "bugs": [
         {
-          "severity": "High",
+          "severity": "Fixed",
           "description": "TopNav only has Public / Contacts / Profile links. Missing 'Private Rooms' entry and 'Sessions' entry; 'Sign out' is inside the profile dropdown rather than top-level (acceptable), but Sessions is entirely absent (matches missing req 2.2.4)."
         }
       ]
@@ -523,7 +523,7 @@
       "status": "PartiallyImplemented",
       "bugs": [
         {
-          "severity": "High",
+          "severity": "Fixed",
           "description": "Right-side Members / Context panel with Room info, Owner, Admins list, Members list with presence, Invite user button, Manage room button is entirely missing in ChatWindow."
         },
         {
@@ -542,7 +542,7 @@
       "status": "PartiallyImplemented",
       "bugs": [
         {
-          "severity": "High",
+          "severity": "Fixed",
           "description": "Emoji button and Attach button are absent. Only a plain textarea + Send button is rendered. 'Replying to' pill is present."
         }
       ]
@@ -685,57 +685,57 @@
       "source": "requirement:2.4.9"
     },
     {
-      "severity": "High",
+      "severity": "Fixed",
       "description": "Attachments not implemented in MessageComposer; paste handler inserts filename text and there is no explicit upload button.",
       "source": "requirement:2.5.2"
     },
     {
-      "severity": "High",
+      "severity": "Fixed",
       "description": "No attach button / upload mechanism in the UI; paste handler is a placeholder.",
       "source": "requirement:2.6.2"
     },
     {
-      "severity": "High",
+      "severity": "Fixed",
       "description": "Attachment metadata (original filename, optional comment) cannot be captured because no upload endpoint exists.",
       "source": "requirement:2.6.3"
     },
     {
-      "severity": "High",
+      "severity": "Fixed",
       "description": "No authenticated file-download endpoint (FilesController missing); access control not enforced.",
       "source": "requirement:2.6.4"
     },
     {
-      "severity": "High",
+      "severity": "Fixed",
       "description": "File size limits (20MB file / 3MB image) not enforceable because there is no upload endpoint.",
       "source": "requirement:3.4"
     },
     {
-      "severity": "High",
+      "severity": "Fixed",
       "description": "Admin/owner permissions and room bans cannot be exercised because their endpoints are missing.",
       "source": "requirement:3.6"
     },
     {
-      "severity": "High",
+      "severity": "Fixed",
       "description": "Right-side Members/Context panel (Room info, Owner, Admins, Members with presence, Invite user, Manage room) is entirely missing from ChatWindow.",
       "source": "requirement:4.1.1"
     },
     {
-      "severity": "High",
+      "severity": "Fixed",
       "description": "Composer lacks emoji and attach buttons (only textarea + send).",
       "source": "requirement:4.3"
     },
     {
-      "severity": "High",
+      "severity": "Fixed",
       "description": "TopNav missing 'Private Rooms' and 'Sessions' entries.",
       "source": "wireframe:wf-5"
     },
     {
-      "severity": "High",
+      "severity": "Fixed",
       "description": "Right-side members/context panel missing in chat 3-column layout.",
       "source": "wireframe:wf-6"
     },
     {
-      "severity": "High",
+      "severity": "Fixed",
       "description": "Composer bar missing emoji and attach buttons.",
       "source": "wireframe:wf-7"
     },

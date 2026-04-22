@@ -7,6 +7,7 @@ const Register = lazy(() => import('@/features/auth/Register'))
 const ForgotPassword = lazy(() => import('@/features/auth/ForgotPassword'))
 const ResetPassword = lazy(() => import('@/features/auth/ResetPassword'))
 const PublicCatalog = lazy(() => import('@/features/rooms/PublicCatalog'))
+const PrivateRooms = lazy(() => import('@/features/rooms/PrivateRooms'))
 const ChatWindow = lazy(() => import('@/features/chat/ChatWindow'))
 const FriendList = lazy(() => import('@/features/friends/FriendList'))
 const ProfilePage = lazy(() => import('@/features/profile/ProfilePage'))
@@ -31,6 +32,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/rooms" replace /> },
       { path: 'rooms', element: wrap(<PublicCatalog />) },
+      { path: 'rooms/private', element: wrap(<PrivateRooms />) },
       { path: 'rooms/:id', element: wrap(<ChatWindow />) },
       { path: 'contacts', element: wrap(<FriendList />) },
       { path: 'profile', element: wrap(<ProfilePage />) },

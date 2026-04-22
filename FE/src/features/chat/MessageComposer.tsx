@@ -18,6 +18,7 @@ export default function MessageComposer({ roomId }: Props) {
   const { getDraft, setDraft, setReplyTo } = useUiStore()
   const [text, setText] = useState(() => getDraft(roomId))
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [emojiOpen, setEmojiOpen] = useState(false)
   const replyToId = useUiStore((s) => s.replyTo.get(roomId) ?? null)
 
   const byteCount = new TextEncoder().encode(text).length
@@ -90,6 +91,26 @@ export default function MessageComposer({ roomId }: Props) {
     }
   }
 
+  const EMOJIS = ['😀','😁','😂','🤣','😃','😄','😅','😆','😉','😊','😍','😘','😎','🤔','😐','😴','😢','😡','👍','👎','👏','🙏','💪','🔥','🎉','❤️','💔','✨','⭐','☑️']
+
+  const insertEmoji = (emoji: string) => {
+    const ta = textareaRef.current
+    if (ta && typeof ta.selectionStart === 'number') {
+      const start = ta.selectionStart
+      const end = ta.selectionEnd ?? start
+      const next = text.slice(0, start) + emoji + text.slice(end)
+      setText(next)
+      requestAnimationFrame(() => {
+        ta.focus()
+        const pos = start + emoji.length
+        ta.setSelectionRange(pos, pos)
+      })
+    } else {
+      setText(text + emoji)
+    }
+    setEmojiOpen(false)
+  }
+
   const handleFilesPicked = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
     if (files.length > 0) {
@@ -107,7 +128,7 @@ export default function MessageComposer({ roomId }: Props) {
           <button className="btn btn-xs btn-ghost" onClick={() => setReplyTo(roomId, null)}>✕</button>
         </div>
       )}
-      <div className="flex gap-2 items-end">
+      <div className="flex gap-2 items-end relative">
         <input
           ref={fileInputRef}
           type="file"
@@ -116,6 +137,35 @@ export default function MessageComposer({ roomId }: Props) {
           onChange={handleFilesPicked}
           data-testid="attachment-input"
         />
+        <div className="relative self-end">
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            aria-label="Insert emoji"
+            title="Insert emoji"
+            onClick={() => setEmojiOpen((v) => !v)}
+            data-testid="emoji-button"
+          >
+            😊
+          </button>
+          {emojiOpen && (
+            <div
+              className="absolute bottom-full left-0 mb-2 z-50 bg-base-100 border border-base-300 rounded shadow p-2 grid grid-cols-6 gap-1 w-64"
+              data-testid="emoji-picker"
+            >
+              {EMOJIS.map((e) => (
+                <button
+                  key={e}
+                  type="button"
+                  className="btn btn-ghost btn-xs text-lg"
+                  onClick={() => insertEmoji(e)}
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <button
           type="button"
           className="btn btn-ghost btn-sm self-end"
