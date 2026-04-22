@@ -34,17 +34,19 @@
 
 ## 6. Automated Bug Fixing
 
-18. Decided to automate the bug-fixing process with agent(s), located in the `analyzer` folder.
-19. First, created a Claude Agent SDK agent in Python. Refactored it a little by asking Claude Code.
-20. Started the agent and wasted $6.99 on it (it should have used the Anthropic API key, not the subscription).
-21. Had to switch to a CLI agent.
-22. Created the first CLI agent based on the original one, but without executing Claude Agent SDK Python code.
-23. Generated `response.json` with the analysis results.
-24. Created two agents, `restart` and `fix`, to automate bug fixes based on `response.json`.
-25. Asked Claude Code to fix bugs using the agents in a semi-automatic way (asked it to fix the first critical bug, verified manually, then asked it to fix five more, and so on). Fixed all critical and high bugs (verified by Claude Code, and the first few also verified manually).
+18. Realized I needed to restructure the `.docx` requirements into a format better suited for an agent. Created two separate files: `chat_requirement.md` and `wireframes.txt`.
+19. Decided to automate the bug-fixing process with agent(s), located in the `analyzer` folder.
+20. First, created a Claude Agent SDK agent in Python. Refactored it a little by asking Claude Code.
+21. Started the agent and wasted $6.99 on it (it should have used the Anthropic API key, not the subscription).
+22. Had to switch to a CLI agent.
+23. Created the first CLI agent based on the original one, but without executing Claude Agent SDK Python code.
+24. Generated `response.json` with the analysis results.
+25. Created two agents, `restart` and `fix`, to automate bug fixes based on `response.json`.
+26. Asked Claude Code to fix bugs using the agents in a semi-automatic way (asked it to fix the first critical bug, verified manually, then asked it to fix five more, and so on). Fixed all critical and high bugs (verified by Claude Code, and the first few also verified manually).
 
 ## 7. Final State
 
-26. Performed a smoke test of the app. Applied a few tiny fixes by prompting.
-27. Ran out of time. The app is much more stable and has more functionality implemented thanks to the agents, but it is still not complete.
-28. The agents can be found in the respective Claude folder for agents: `.claude\agents`.
+27. Performed a smoke test of the app. Applied a few tiny fixes by prompting.
+28. Ran out of time. The app is much more stable and has more functionality implemented thanks to the agents, but it is still not complete.
+29. The agents can be found in the respective Claude folder for agents: `.claude\agents`.
+30. More details can probably be found in the git history 🙂
