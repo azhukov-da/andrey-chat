@@ -11,11 +11,13 @@ public class FriendService : IFriendService
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IChatNotifier _notifier;
 
-    public FriendService(IApplicationDbContext context, ICurrentUser currentUser)
+    public FriendService(IApplicationDbContext context, ICurrentUser currentUser, IChatNotifier notifier)
     {
         _context = context;
         _currentUser = currentUser;
+        _notifier = notifier;
     }
 
     public async Task<Result<List<FriendDto>>> ListFriendsAsync()
@@ -26,7 +28,8 @@ public class FriendService : IFriendService
         var friends = await _context.Friendships
             .Where(f =>
                 (f.UserAId == _currentUser.UserId || f.UserBId == _currentUser.UserId) &&
-                f.Status == FriendshipStatus.Accepted)
+                (f.Status == FriendshipStatus.Accepted ||
+                 (f.Status == FriendshipStatus.Pending && f.RequestedByUserId != _currentUser.UserId)))
             .Select(f => new FriendDto
             {
                 UserId = f.UserAId == _currentUser.UserId ? f.UserBId : f.UserAId,
@@ -80,6 +83,13 @@ public class FriendService : IFriendService
 
         _context.Friendships.Add(friendship);
         await _context.SaveChangesAsync();
+
+        await _notifier.FriendRequestReceivedAsync(targetUser.Id, new
+        {
+            userId = _currentUser.UserId,
+            userName = _currentUser.UserName,
+            message
+        });
 
         return Result.Success();
     }
