@@ -1,6 +1,7 @@
 using Application.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Web.Models;
 
 namespace Web.Controllers;
 
@@ -63,4 +64,3 @@ public class SessionsController : ControllerBase
     }
 }
 
-public record RegisterSessionRequest(string? DeviceInfo);

@@ -14,7 +14,7 @@ INPUTS — read these from `analyzer/.env` and resolve to absolute paths:
 - Website URL           : value of `WEBSITE_URL`
 - Test user email       : value of `TEST_USER_EMAIL`
 - Test user password    : value of `TEST_USER_PASSWORD`
-- Output report path    : value of `REPORT_PATH` (default `analyzer/report.json`)
+- Output report path    : value of `REPORT_PATH` (default `report.json` at the repo root)
 - Max users budget      : value of `MAX_USERS` (default 10)
 - Max chats budget      : value of `MAX_CHATS` (default 20)
 

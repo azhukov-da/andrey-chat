@@ -1,6 +1,7 @@
 using Application.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Web.Models;
 
 namespace Web.Controllers;
 
@@ -85,7 +86,4 @@ public class MessageActionsController : ControllerBase
     }
 }
 
-public record SendMessageRequest(string Text, Guid? ReplyToMessageId);
-public record EditMessageRequest(string Text);
-public record MarkReadRequest(Guid MessageId);
 

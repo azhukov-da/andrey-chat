@@ -10,9 +10,10 @@ interface Props {
   message: Message
   isMine: boolean
   roomId: string
+  replyTo?: Message
 }
 
-export default function MessageItem({ message, isMine, roomId }: Props) {
+export default function MessageItem({ message, isMine, roomId, replyTo }: Props) {
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState(false)
   const [editText, setEditText] = useState(message.text)
@@ -60,6 +61,31 @@ export default function MessageItem({ message, isMine, roomId }: Props) {
         </div>
       )}
       <div className="chat-bubble max-w-sm break-words">
+        {message.replyToMessageId && (
+          <div
+            className="border-l-4 border-primary/60 bg-base-200/50 rounded pl-2 pr-2 py-1 mb-1 text-xs opacity-80"
+            data-testid="reply-quote"
+          >
+            {replyTo ? (
+              <>
+                <div className="font-semibold opacity-90">
+                  {replyTo.authorDisplayName ?? replyTo.authorUserName}
+                </div>
+                <div className="italic truncate whitespace-pre-wrap line-clamp-2 max-w-[16rem]">
+                  {replyTo.isDeleted
+                    ? 'Message deleted'
+                    : replyTo.text && replyTo.text.length > 0
+                    ? replyTo.text
+                    : replyTo.attachments && replyTo.attachments[0]
+                    ? `[attachment: ${replyTo.attachments[0].fileName}]`
+                    : ''}
+                </div>
+              </>
+            ) : (
+              <div className="italic opacity-70">Replying to earlier message</div>
+            )}
+          </div>
+        )}
         {message.attachments && message.attachments.length > 0 && (
           <div className="flex flex-col gap-2 mb-2" data-testid="attachments">
             {message.attachments.map((a) => (

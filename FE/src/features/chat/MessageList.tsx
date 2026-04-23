@@ -53,9 +53,18 @@ export default function MessageList({ roomId }: Props) {
               </div>
             ) : null,
         }}
-        itemContent={(_, msg) => (
-          <MessageItem key={msg.id} message={msg} isMine={msg.authorId === me?.id} roomId={roomId} />
-        )}
+        itemContent={(_, msg) => {
+          const replyTo = msg.replyToMessageId
+            ? messages.find((m) => m.id === msg.replyToMessageId)
+            : undefined
+          const props = {
+            message: msg,
+            isMine: msg.authorId === me?.id,
+            roomId,
+            ...(replyTo ? { replyTo } : {}),
+          }
+          return <MessageItem key={msg.id} {...props} />
+        }}
       />
     </div>
   )

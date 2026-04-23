@@ -1,6 +1,7 @@
 using Application.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Web.Models;
 
 namespace Web.Controllers;
 
@@ -94,5 +95,4 @@ public class FriendsController : ControllerBase
     }
 }
 
-public record SendFriendRequestRequest(string Username, string? Message);
 

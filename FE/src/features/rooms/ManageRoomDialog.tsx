@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router'
 import {
   banMember,
   deleteRoom,
+  inviteUserToRoom,
   listBanned,
   listMembers,
   makeAdmin,
@@ -19,7 +20,7 @@ interface Props {
   onClose: () => void
 }
 
-type TabKey = 'members' | 'admins' | 'banned' | 'settings'
+type TabKey = 'members' | 'admins' | 'banned' | 'invitations' | 'settings'
 
 export default function ManageRoomDialog({ room, onClose }: Props) {
   const [tab, setTab] = useState<TabKey>('members')
@@ -117,6 +118,36 @@ export default function ManageRoomDialog({ room, onClose }: Props) {
     updateMut.mutate()
   }
 
+  const [inviteUsername, setInviteUsername] = useState('')
+  const [inviteError, setInviteError] = useState<string | null>(null)
+  const [inviteSuccess, setInviteSuccess] = useState<string | null>(null)
+  const inviteMut = useMutation({
+    mutationFn: (username: string) => inviteUserToRoom(room.id, username),
+    onSuccess: (_data, username) => {
+      setInviteError(null)
+      setInviteSuccess(`Invitation sent to @${username}.`)
+      setInviteUsername('')
+    },
+    onError: (err: unknown) => {
+      setInviteSuccess(null)
+      const msg = err instanceof Error ? err.message : 'Failed to send invitation.'
+      setInviteError(msg)
+    },
+  })
+
+  const handleSendInvite = (e: React.FormEvent) => {
+    e.preventDefault()
+    const username = inviteUsername.trim()
+    if (!username) {
+      setInviteError('Username is required.')
+      setInviteSuccess(null)
+      return
+    }
+    setInviteError(null)
+    setInviteSuccess(null)
+    inviteMut.mutate(username)
+  }
+
   const deleteMut = useMutation({
     mutationFn: () => deleteRoom(room.id),
     onSuccess: () => {
@@ -172,7 +203,13 @@ export default function ManageRoomDialog({ room, onClose }: Props) {
             className={`tab ${tab === 'banned' ? 'tab-active' : ''}`}
             onClick={() => setTab('banned')}
             data-testid="tab-banned"
-          >Banned</button>
+          >Banned users</button>
+          <button
+            role="tab"
+            className={`tab ${tab === 'invitations' ? 'tab-active' : ''}`}
+            onClick={() => setTab('invitations')}
+            data-testid="tab-invitations"
+          >Invitations</button>
           <button
             role="tab"
             className={`tab ${tab === 'settings' ? 'tab-active' : ''}`}
@@ -240,24 +277,85 @@ export default function ManageRoomDialog({ room, onClose }: Props) {
           <div data-testid="banned-panel">
             {bannedQuery.isLoading && <div className="loading loading-spinner" />}
             {bannedQuery.isError && <div className="alert alert-error text-sm">Failed to load banned users.</div>}
-            <ul className="divide-y divide-base-300">
-              {(bannedQuery.data ?? []).map((b) => (
-                <li key={b.bannedUserId} className="flex items-center justify-between py-2">
-                  <div>
-                    <div className="font-medium">{b.bannedUserName}</div>
-                    <div className="text-xs text-base-content/60">
-                      @{b.bannedUserName}{b.reason ? ` - ${b.reason}` : ''}
-                    </div>
-                  </div>
-                  {isAdmin && (
-                    <button className="btn btn-xs" onClick={() => unbanMut.mutate(b.bannedUserId)}>Unban</button>
-                  )}
-                </li>
-              ))}
-              {(bannedQuery.data ?? []).length === 0 && !bannedQuery.isLoading && (
-                <li className="py-2 text-sm text-base-content/60">No banned users.</li>
-              )}
-            </ul>
+            {(bannedQuery.data ?? []).length > 0 && (
+              <div className="overflow-x-auto">
+                <table className="table table-sm" data-testid="banned-table">
+                  <thead>
+                    <tr>
+                      <th>Username</th>
+                      <th data-testid="banned-col-banned-by">Banned by</th>
+                      <th data-testid="banned-col-date-time">Date/time</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(bannedQuery.data ?? []).map((b) => (
+                      <tr key={b.bannedUserId} data-testid={`banned-row-${b.bannedUserId}`}>
+                        <td>
+                          <div className="font-medium">@{b.bannedUserName}</div>
+                          {b.reason && (
+                            <div className="text-xs text-base-content/60">Reason: {b.reason}</div>
+                          )}
+                        </td>
+                        <td data-testid={`banned-by-${b.bannedUserId}`}>
+                          {b.bannedByUserName ? `@${b.bannedByUserName}` : '-'}
+                        </td>
+                        <td data-testid={`banned-at-${b.bannedUserId}`}>
+                          {b.createdAt ? new Date(b.createdAt).toLocaleString() : '-'}
+                        </td>
+                        <td>
+                          {isAdmin && (
+                            <button className="btn btn-xs" onClick={() => unbanMut.mutate(b.bannedUserId)}>Unban</button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {(bannedQuery.data ?? []).length === 0 && !bannedQuery.isLoading && (
+              <div className="py-2 text-sm text-base-content/60">No banned users.</div>
+            )}
+          </div>
+        )}
+
+        {tab === 'invitations' && (
+          <div data-testid="invitations-panel">
+            {isAdmin ? (
+              <form onSubmit={handleSendInvite} className="space-y-3">
+                <label className="label" htmlFor="invite-username">
+                  <span className="label-text">Invite by username</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="invite-username"
+                    data-testid="invite-username"
+                    className="input input-bordered flex-1"
+                    value={inviteUsername}
+                    onChange={(e) => setInviteUsername(e.target.value)}
+                    placeholder="username"
+                    disabled={inviteMut.isPending}
+                  />
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    data-testid="invite-send"
+                    disabled={inviteMut.isPending}
+                  >
+                    {inviteMut.isPending ? 'Sending...' : 'Send invite'}
+                  </button>
+                </div>
+                {inviteError && (
+                  <div className="alert alert-error text-sm" data-testid="invite-error">{inviteError}</div>
+                )}
+                {inviteSuccess && (
+                  <div className="alert alert-success text-sm" data-testid="invite-success">{inviteSuccess}</div>
+                )}
+              </form>
+            ) : (
+              <div className="text-sm text-base-content/60">Only admins can send invitations.</div>
+            )}
           </div>
         )}
 

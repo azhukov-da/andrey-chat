@@ -1,6 +1,7 @@
 using Application.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Web.Models;
 
 namespace Web.Controllers;
 
@@ -28,5 +29,4 @@ public class DirectChatsController : ControllerBase
     }
 }
 
-public record OpenDirectChatRequest(string Username);
 

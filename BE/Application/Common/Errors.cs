@@ -4,6 +4,29 @@ public record Error(string Code, string Message)
 {
     public static Error None => new(string.Empty, string.Empty);
     public static Error NullValue => new("Error.NullValue", "The specified result value is null.");
+
+    public virtual object ToValidationResponse() => new
+    {
+        errors = new Dictionary<string, string[]>
+        {
+            [Code] = new[] { Message }
+        }
+    };
+}
+
+public record FieldError(string Field, string Code, string[] Messages)
+    : Error(Code, string.Join(" ", Messages))
+{
+    public FieldError(string field, string code, string message)
+        : this(field, code, new[] { message }) { }
+
+    public override object ToValidationResponse() => new
+    {
+        errors = new Dictionary<string, string[]>
+        {
+            [Field] = Messages
+        }
+    };
 }
 
 public static class Errors
@@ -73,5 +96,20 @@ public static class Errors
     {
         public static Error Forbidden => new("Authorization.Forbidden", "You do not have permission to perform this action.");
         public static Error Unauthorized => new("Authorization.Unauthorized", "You must be authenticated to perform this action.");
+    }
+
+    public static class Auth
+    {
+        public static Error InvalidCredentials => new("Auth.InvalidCredentials", "Invalid email or password.");
+
+        public static FieldError EmailRequired => new("email", "Auth.EmailRequired", "Email is required.");
+        public static FieldError UsernameRequired => new("username", "Auth.UsernameRequired", "Username is required.");
+        public static FieldError PasswordRequired => new("password", "Auth.PasswordRequired", "Password is required.");
+        public static FieldError InvalidUsernameFormat => new("username", "Auth.InvalidUsernameFormat", "Username must be 3-32 characters, letters/digits/._- only.");
+        public static FieldError UsernameTaken => new("username", "Auth.UsernameTaken", "Username is already taken.");
+        public static FieldError UsernameEqualsEmail => new("username", "Auth.UsernameEqualsEmail", "Username must be different from email.");
+        public static FieldError EmailTaken => new("email", "Auth.EmailTaken", "Email is already registered.");
+        public static FieldError RegistrationFailed(IEnumerable<string> descriptions) =>
+            new("registration", "Auth.RegistrationFailed", descriptions.ToArray());
     }
 }

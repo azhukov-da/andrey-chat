@@ -3,6 +3,7 @@ using Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Web.Models;
 
 namespace Web.Controllers;
 
@@ -76,6 +77,4 @@ public class MeController : ControllerBase
     }
 }
 
-public record UpdateDisplayNameRequest(string DisplayName);
-public record ChangePasswordRequest(string CurrentPassword, string NewPassword);
 

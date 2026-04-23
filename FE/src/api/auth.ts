@@ -18,12 +18,12 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
   return undefined as T
 }
 
-export function register(email: string, password: string) {
-  return postJson<void>('/register', { email, password })
+export function register(email: string, username: string, password: string) {
+  return postJson<void>('/api/auth/register', { email, username, password })
 }
 
 export function login(email: string, password: string): Promise<AccessTokenResponse> {
-  return postJson<AccessTokenResponse>('/login', { email, password })
+  return postJson<AccessTokenResponse>('/api/auth/login', { email, password })
 }
 
 export function refresh(refreshToken: string): Promise<AccessTokenResponse> {

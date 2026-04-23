@@ -109,6 +109,11 @@ export type CursorPaged<T> = { items: T[]; nextCursor?: string | null; hasMore: 
 export const RegisterFormSchema = z
   .object({
     email: z.string().email('Invalid email'),
+    username: z
+      .string()
+      .min(3, 'Username must be at least 3 characters')
+      .max(32, 'Username must be at most 32 characters')
+      .regex(/^[A-Za-z0-9._-]+$/, 'Username can contain letters, digits, . _ -'),
     password: z.string().superRefine((val, ctx) => {
       const missing: string[] = []
       if (val.length < 6) missing.push('at least 6 characters')
@@ -122,6 +127,10 @@ export const RegisterFormSchema = z
   .refine((d) => d.password === d.confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],
+  })
+  .refine((d) => d.username.toLowerCase() !== d.email.toLowerCase(), {
+    message: 'Username must be different from email',
+    path: ['username'],
   })
 export type RegisterForm = z.infer<typeof RegisterFormSchema>
 

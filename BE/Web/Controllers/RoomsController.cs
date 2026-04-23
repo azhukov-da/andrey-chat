@@ -1,7 +1,7 @@
 using Application.Abstractions;
-using Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Web.Models;
 
 namespace Web.Controllers;
 
@@ -201,8 +201,4 @@ public class RoomsController : ControllerBase
     }
 }
 
-public record CreateRoomRequest(string Name, string? Description, RoomVisibility Visibility);
-public record UpdateRoomRequest(string Name, string? Description, RoomVisibility Visibility);
-public record BanMemberRequest(string? Reason);
-public record InviteUserRequest(string InviteeUsername);
 

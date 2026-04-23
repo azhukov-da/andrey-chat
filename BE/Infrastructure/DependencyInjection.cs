@@ -59,6 +59,7 @@ public static class DependencyInjection
         services.AddSingleton<IPresenceTracker, InMemoryPresenceTracker>();
 
         services.AddScoped<ICurrentUser, CurrentUserService>();
+        services.AddScoped<IAuthService, AuthService>();
 
         return services;
     }

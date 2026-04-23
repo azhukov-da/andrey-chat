@@ -19,7 +19,7 @@ export default function Register() {
   const onSubmit = async (data: RegisterForm) => {
     setError(null)
     try {
-      await registerUser(data.email, data.password)
+      await registerUser(data.email, data.username, data.password)
       await login(data.email, data.password, false)
       navigate('/rooms')
     } catch (e) {
@@ -38,6 +38,11 @@ export default function Register() {
               <label className="label"><span className="label-text">Email</span></label>
               <input type="email" className={`input input-bordered${isSubmitted && errors.email ? ' input-error' : ''}`} {...register('email')} />
               {isSubmitted && errors.email && <label className="label"><span className="label-text-alt text-error">{errors.email.message}</span></label>}
+            </div>
+            <div className="form-control">
+              <label className="label"><span className="label-text">Username</span></label>
+              <input type="text" className={`input input-bordered${isSubmitted && errors.username ? ' input-error' : ''}`} {...register('username')} />
+              {isSubmitted && errors.username && <label className="label"><span className="label-text-alt text-error">{errors.username.message}</span></label>}
             </div>
             <div className="form-control">
               <label className="label"><span className="label-text">Password</span></label>

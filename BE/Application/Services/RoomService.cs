@@ -409,6 +409,23 @@ public class RoomService : IRoomService
             return Errors.Authorization.Forbidden;
 
         _context.RoomMemberships.Remove(target);
+
+        // Per requirement 2.4.8: removal by an admin is treated as a ban.
+        // Add a ban record so removed users cannot rejoin public rooms.
+        var existingBan = await _context.RoomBans
+            .FirstOrDefaultAsync(b => b.RoomId == roomId && b.BannedUserId == targetUserId);
+        if (existingBan == null)
+        {
+            _context.RoomBans.Add(new RoomBan
+            {
+                RoomId = roomId,
+                BannedUserId = targetUserId,
+                BannedByUserId = _currentUser.UserId!,
+                Reason = null,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
         await _context.SaveChangesAsync();
 
         await _notifier.RoomMembershipChangedAsync(roomId, targetUserId, "removed");

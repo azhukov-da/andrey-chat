@@ -53,8 +53,8 @@ export function useAuth() {
     navigate('/login')
   }, [clearAuth, queryClient, navigate])
 
-  const register = useCallback(async (email: string, password: string) => {
-    await authApi.register(email, password)
+  const register = useCallback(async (email: string, username: string, password: string) => {
+    await authApi.register(email, username, password)
   }, [])
 
   const bootstrapAuth = useCallback(async () => {

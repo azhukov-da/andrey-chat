@@ -1,0 +1,828 @@
+{
+  "summary": {
+    "total_bugs": 42,
+    "bugs_critical": 0,
+    "bugs_high": 0,
+    "bugs_medium": 12,
+    "bugs_low": 5,
+    "bugs_fixed": 28,
+    "bugs_non_fixable": 0
+  },
+  "requirements": [
+    {
+      "id": "2.1.1",
+      "title": "Self-registration (email/password/username)",
+      "status": "Implemented",
+      "bugs": []
+    },
+    {
+      "id": "2.1.2",
+      "title": "Unique email/username; username immutable; no email verification",
+      "status": "Implemented",
+      "bugs": []
+    },
+    {
+      "id": "2.1.3",
+      "title": "Sign in / sign out / persistent login",
+      "status": "PartiallyImplemented",
+      "bugs": [
+        {
+          "severity": "Medium",
+          "description": "Sign-out uses Identity default /logout; requirement says sign-out must log out only the current browser session. Bearer-token Identity API does not maintain multi-session server-side state, so 'other sessions' are not explicitly tracked/invalidated - may or may not satisfy the per-session requirement depending on token expiry behaviour."
+        }
+      ]
+    },
+    {
+      "id": "2.1.4",
+      "title": "Password reset and password change",
+      "status": "PartiallyImplemented",
+      "bugs": [
+        {
+          "severity": "Medium",
+          "description": "Password reset exists via Identity API and a ResetPassword/ForgotPassword page; however default IEmailSender is a DevEmailSender that only logs the reset link - reset email is not actually sent unless SMTP provider is configured."
+        },
+        {
+          "severity": "Fixed",
+          "description": "No dedicated in-app 'change password while logged in' UI visible under ProfilePage or elsewhere in FE/src/features; Identity endpoint manage/info is hidden from swagger, leaving change-password inaccessible to end users."
+        }
+      ]
+    },
+    {
+      "id": "2.1.5",
+      "title": "Account deletion cascades to owned rooms/messages/files; other memberships removed",
+      "status": "PartiallyImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "MeController exposes DELETE /api/me calling ProfileService.DeleteAccountAsync, but backend does not expose attachment-file cleanup service and there is no FilesController (see 2.6.4) - cascading deletion of files on disk is uncertain."
+        }
+      ]
+    },
+    {
+      "id": "2.2.1",
+      "title": "Presence states: online / AFK / offline",
+      "status": "Implemented",
+      "bugs": []
+    },
+    {
+      "id": "2.2.2",
+      "title": "AFK rule: 1 minute of no interaction",
+      "status": "Implemented",
+      "bugs": []
+    },
+    {
+      "id": "2.2.3",
+      "title": "Multi-tab presence (BroadcastChannel dedup)",
+      "status": "Implemented",
+      "bugs": []
+    },
+    {
+      "id": "2.2.4",
+      "title": "Active sessions list with per-session logout",
+      "status": "NotImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "No SessionsController in BE/Web/Controllers, no ISessionService in Application/Abstractions, and no Sessions page in FE/src/features. Requirement 2.2.4 and wireframe top-nav 'Sessions' entry are entirely absent."
+        }
+      ]
+    },
+    {
+      "id": "2.3.1",
+      "title": "Friend list",
+      "status": "Implemented",
+      "bugs": []
+    },
+    {
+      "id": "2.3.2",
+      "title": "Send friend request by username or from room user list, optional text",
+      "status": "PartiallyImplemented",
+      "bugs": [
+        {
+          "severity": "Medium",
+          "description": "POST /api/friends/requests accepts username + optional message, so 'by username' is covered. There is no UI affordance to send a friend request from a chat room user list (RightSidebar/ChatWindow do not render a member list with per-user actions)."
+        }
+      ]
+    },
+    {
+      "id": "2.3.3",
+      "title": "Friendship confirmation",
+      "status": "Implemented",
+      "bugs": []
+    },
+    {
+      "id": "2.3.4",
+      "title": "Remove friend",
+      "status": "NotImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "FriendsController has no DELETE endpoint for removing a friend; FriendList.tsx has no Remove button. Users cannot un-friend."
+        },
+        {
+          "severity": "Fixed",
+          "description": "No endpoint to reject an incoming friend request - FE offers only Accept or Block."
+        }
+      ]
+    },
+    {
+      "id": "2.3.5",
+      "title": "User-to-user ban (block)",
+      "status": "PartiallyImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "Block/Unblock endpoints exist but requirement mandates that existing personal message history becomes read-only/frozen and that personal chat is terminated. MessageService.SendMessageAsync only checks RoomBan, not UserBlock, so a blocked user's direct-chat room is not verifiably frozen on send."
+        }
+      ]
+    },
+    {
+      "id": "2.3.6",
+      "title": "Personal messaging only between friends & not blocked",
+      "status": "PartiallyImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "DirectChatService.OpenOrCreate does not enforce friendship. Any authenticated user can open a direct chat with any username (source: DirectChatsController, DirectChatService)."
+        }
+      ]
+    },
+    {
+      "id": "2.4.1",
+      "title": "Any user may create a chat room",
+      "status": "Implemented",
+      "bugs": []
+    },
+    {
+      "id": "2.4.2",
+      "title": "Room properties: name/desc/visibility/owner/admins/members/banned; unique names",
+      "status": "Implemented",
+      "bugs": []
+    },
+    {
+      "id": "2.4.3",
+      "title": "Public rooms catalog with search and member counts",
+      "status": "Implemented",
+      "bugs": []
+    },
+    {
+      "id": "2.4.4",
+      "title": "Private rooms (invite-only, hidden from catalog)",
+      "status": "PartiallyImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "RoomService.ListPublicRoomsAsync correctly filters out private rooms, but there is no invite system implemented: no RoomInvitation endpoints in RoomsController and no UI to invite users (see 2.4.9). Private rooms can only be joined by becoming a member through unknown means."
+        }
+      ]
+    },
+    {
+      "id": "2.4.5",
+      "title": "Join/leave rooms; owner cannot leave; owner can only delete",
+      "status": "PartiallyImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "RoomService implements CreateRoomAsync and JoinRoomAsync, but Leave is not implemented. There is no LeaveRoom method in RoomService and no /leave endpoint in RoomsController."
+        }
+      ]
+    },
+    {
+      "id": "2.4.6",
+      "title": "Room deletion cascades messages, files, images",
+      "status": "NotImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "Delete-room is not implemented: no DeleteRoomAsync in RoomService, no DELETE endpoint in RoomsController, despite Room entity having DeletedAt soft-delete column. Owners cannot delete their own rooms."
+        }
+      ]
+    },
+    {
+      "id": "2.4.7",
+      "title": "Owner & admin roles and moderation actions",
+      "status": "NotImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "No admin moderation endpoints exist. RoomsController lacks MakeAdmin, RemoveAdmin, RemoveMember, BanMember, UnbanMember, ListBanned. RoomService implements none of these, so requirement 2.4.7 is entirely absent from the backend."
+        }
+      ]
+    },
+    {
+      "id": "2.4.8",
+      "title": "Room ban: removal == ban; banned user cannot rejoin",
+      "status": "PartiallyImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "JoinRoomAsync checks RoomBan on join (good), but there is no way to create a RoomBan - no admin API exists. RoomBan entity is declared and queried but never inserted by application code."
+        }
+      ]
+    },
+    {
+      "id": "2.4.9",
+      "title": "Private room invitations",
+      "status": "NotImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "RoomInvitation entity exists but there is no API to create, list, accept or reject invitations. No UI invite dialog in FE/src/features/rooms."
+        }
+      ]
+    },
+    {
+      "id": "2.5.1",
+      "title": "Room and personal chats share the same model/features",
+      "status": "Implemented",
+      "bugs": []
+    },
+    {
+      "id": "2.5.2",
+      "title": "Messages: text, multiline, emoji, attachments, replies; <=3KB UTF-8",
+      "status": "PartiallyImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "Attachments are not implemented: no AttachmentsController, and MessageComposer.tsx paste handler explicitly contains a placeholder comment 'attachment upload placeholder - currently just show filename' that inserts '[attach: name]' into text. There is no explicit attach button."
+        },
+        {
+          "severity": "Low",
+          "description": "No emoji picker UI in MessageComposer (emoji can still be typed via OS). Wireframe shows a dedicated emoji button."
+        }
+      ]
+    },
+    {
+      "id": "2.5.3",
+      "title": "Reply/reference to another message, visually quoted",
+      "status": "Implemented",
+      "bugs": []
+    },
+    {
+      "id": "2.5.4",
+      "title": "Edit own message; 'edited' indicator",
+      "status": "Implemented",
+      "bugs": []
+    },
+    {
+      "id": "2.5.5",
+      "title": "Delete message (author or room admin)",
+      "status": "PartiallyImplemented",
+      "bugs": [
+        {
+          "severity": "Medium",
+          "description": "MessageService.DeleteMessage must allow room admins in room chats. Without an admin management system in place (req 2.4.7), admin-driven deletion has no test path even if the service-level check exists."
+        }
+      ]
+    },
+    {
+      "id": "2.5.6",
+      "title": "Persistent ordered history with infinite scroll; offline delivery",
+      "status": "Implemented",
+      "bugs": []
+    },
+    {
+      "id": "2.6.1",
+      "title": "Supported attachments: images and files",
+      "status": "NotImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "No AttachmentsController exists; LocalFileStorage is wired but never invoked by any controller/service. Attachment upload/download paths are entirely missing end-to-end."
+        }
+      ]
+    },
+    {
+      "id": "2.6.2",
+      "title": "Upload via button or paste",
+      "status": "NotImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "MessageComposer lacks an attach button; paste handler merely inserts filename text, does not upload."
+        }
+      ]
+    },
+    {
+      "id": "2.6.3",
+      "title": "Preserve original filename; optional comment",
+      "status": "NotImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "Attachment entity defines FileName and Comment columns but no upload endpoint exists to populate them."
+        }
+      ]
+    },
+    {
+      "id": "2.6.4",
+      "title": "Access control for files (members only)",
+      "status": "NotImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "No FilesController; no authenticated download endpoint. Files cannot be served and access control is moot."
+        }
+      ]
+    },
+    {
+      "id": "2.6.5",
+      "title": "File persistence after access loss",
+      "status": "NotImplemented",
+      "bugs": [
+        {
+          "severity": "Medium",
+          "description": "Cannot be verified - attachments are entirely unimplemented."
+        }
+      ]
+    },
+    {
+      "id": "2.7.1",
+      "title": "Unread indicators near rooms/contacts",
+      "status": "PartiallyImplemented",
+      "bugs": [
+        {
+          "severity": "Medium",
+          "description": "Unread badges are rendered on room items in RightSidebar and in TopNav aggregate, but FriendList.tsx does not render unread badges next to contacts."
+        }
+      ]
+    },
+    {
+      "id": "2.7.2",
+      "title": "Low latency presence updates",
+      "status": "Implemented",
+      "bugs": []
+    },
+    {
+      "id": "3.1",
+      "title": "Capacity: 300 users, 1000 per room, unlimited rooms",
+      "status": "Implemented",
+      "bugs": [
+        {
+          "severity": "Low",
+          "description": "InMemoryPresenceTracker is single-process; horizontal scaling for 300 users is feasible on one node but would break with multiple API instances."
+        }
+      ]
+    },
+    {
+      "id": "3.2",
+      "title": "Performance targets (3s message delivery, 2s presence, 10k history)",
+      "status": "Implemented",
+      "bugs": []
+    },
+    {
+      "id": "3.3",
+      "title": "Persistence with infinite scroll",
+      "status": "Implemented",
+      "bugs": []
+    },
+    {
+      "id": "3.4",
+      "title": "File storage on local FS; <=20MB file / <=3MB image",
+      "status": "PartiallyImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "LocalFileStorage abstraction exists but no endpoint enforces the 20MB / 3MB limits. Feature cannot be exercised."
+        }
+      ]
+    },
+    {
+      "id": "3.5",
+      "title": "No inactivity logout; persist login; multi-tab",
+      "status": "Implemented",
+      "bugs": []
+    },
+    {
+      "id": "3.6",
+      "title": "Consistency of membership/bans/file access/history/roles",
+      "status": "PartiallyImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "Admin/owner permissions and room bans cannot be exercised because admin endpoints are missing (see 2.4.7, 2.4.8)."
+        }
+      ]
+    },
+    {
+      "id": "4.1",
+      "title": "Classic layout: top menu, center chat, input bottom, right sidebar",
+      "status": "Implemented",
+      "bugs": []
+    },
+    {
+      "id": "4.1.1",
+      "title": "Rooms/contacts on right; accordion after enter; members panel on right",
+      "status": "PartiallyImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "No members/context panel is rendered on the right side when a room is open. ChatWindow.tsx only renders header + MessageList + MessageComposer; no members list, presence column, or room-info panel exists (wireframe shows Room info, Owner, Admins, Members, Invite user, Manage room)."
+        },
+        {
+          "severity": "Medium",
+          "description": "Sidebar shows 'Rooms' and 'Direct Messages' but not separate 'Public Rooms'/'Private Rooms' sections and no integrated 'Contacts' list; wireframe expects combined rooms + contacts column with search."
+        }
+      ]
+    },
+    {
+      "id": "4.2",
+      "title": "Auto-scroll to bottom; infinite scroll up; no forced autoscroll when scrolled up",
+      "status": "Implemented",
+      "bugs": []
+    },
+    {
+      "id": "4.3",
+      "title": "Message composer: multiline, emoji, attachments, replies",
+      "status": "PartiallyImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "Attachment button missing; emoji picker missing (see 2.5.2)."
+        }
+      ]
+    },
+    {
+      "id": "4.4",
+      "title": "Unread indicators near room and contact names",
+      "status": "PartiallyImplemented",
+      "bugs": [
+        {
+          "severity": "Medium",
+          "description": "Unread indicators exist on rooms but not on contacts (see 2.7.1)."
+        }
+      ]
+    },
+    {
+      "id": "4.5",
+      "title": "Admin UI (ban/unban, remove, manage admins, view banned, delete msgs/room)",
+      "status": "NotImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "No admin UI exists: no Manage Room modal, no Members/Admins/Banned/Invitations/Settings tabs (as shown in wireframe), no delete-room action. Corresponds to missing BE endpoints (2.4.6, 2.4.7, 2.4.8, 2.4.9)."
+        }
+      ]
+    },
+    {
+      "id": "6",
+      "title": "Advanced: Jabber/XMPP federation",
+      "status": "NotImplemented",
+      "bugs": [
+        {
+          "severity": "Low",
+          "description": "BE/IMPLEMENTATION_PLAN.md explicitly marks XMPP out of scope for v1. No Jabber admin dashboard or federation stats UI."
+        }
+      ]
+    }
+  ],
+  "wireframes": [
+    {
+      "id": "wf-1",
+      "screen_name": "Auth landing (logo + Sign in / Register buttons)",
+      "status": "PartiallyImplemented",
+      "bugs": [
+        {
+          "severity": "Low",
+          "description": "FE routes render Sign-In and Register pages directly, there is no distinct landing header bar showing LOGO with Sign in / Register links when unauthenticated."
+        }
+      ]
+    },
+    {
+      "id": "wf-2",
+      "screen_name": "Sign In form (email, password, keep-me-signed-in, forgot link)",
+      "status": "Implemented",
+      "bugs": []
+    },
+    {
+      "id": "wf-3",
+      "screen_name": "Register form (email, username, password, confirm password)",
+      "status": "Implemented",
+      "bugs": []
+    },
+    {
+      "id": "wf-4",
+      "screen_name": "Forgot password form",
+      "status": "Implemented",
+      "bugs": []
+    },
+    {
+      "id": "wf-5",
+      "screen_name": "Top nav (ChatLogo | Public Rooms | Private Rooms | Contacts | Sessions | Profile | Sign out)",
+      "status": "PartiallyImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "TopNav only has Public / Contacts / Profile links. Missing 'Private Rooms' entry and 'Sessions' entry; 'Sign out' is inside the profile dropdown rather than top-level (acceptable), but Sessions is entirely absent (matches missing req 2.2.4)."
+        }
+      ]
+    },
+    {
+      "id": "wf-6",
+      "screen_name": "Main chat 3-column layout (left sidebar rooms+contacts, center chat, right members/context)",
+      "status": "PartiallyImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "Right-side Members / Context panel with Room info, Owner, Admins list, Members list with presence, Invite user button, Manage room button is entirely missing in ChatWindow."
+        },
+        {
+          "severity": "Medium",
+          "description": "Sidebar lacks a search input for rooms and lacks combined Contacts section; wireframe groups Public Rooms and Private Rooms explicitly, while FE just shows 'Rooms' and 'Direct Messages'."
+        },
+        {
+          "severity": "Medium",
+          "description": "No 'Create room' button in the sidebar; CreateRoomDialog component exists but is only invoked from PublicCatalog."
+        }
+      ]
+    },
+    {
+      "id": "wf-7",
+      "screen_name": "Message composer bar (emoji, attach, replying-to, multiline input, send)",
+      "status": "PartiallyImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "Emoji button and Attach button are absent. Only a plain textarea + Send button is rendered. 'Replying to' pill is present."
+        }
+      ]
+    },
+    {
+      "id": "wf-8",
+      "screen_name": "Manage Room modal - Members tab (list with Make admin/Remove admin/Ban/Remove)",
+      "status": "Implemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "No Manage Room modal exists. No component under FE/src/features/rooms implements member management."
+        }
+      ]
+    },
+    {
+      "id": "wf-9",
+      "screen_name": "Manage Room modal - Admins tab",
+      "status": "NotImplemented",
+      "bugs": [
+        {
+          "severity": "High",
+          "description": "Not implemented - no admin management UI."
+        }
+      ]
+    },
+    {
+      "id": "wf-10",
+      "screen_name": "Manage Room modal - Banned users tab",
+      "status": "NotImplemented",
+      "bugs": [
+        {
+          "severity": "High",
+          "description": "Not implemented - no banned-users UI and no backend endpoints to populate it."
+        }
+      ]
+    },
+    {
+      "id": "wf-11",
+      "screen_name": "Manage Room modal - Invitations tab",
+      "status": "NotImplemented",
+      "bugs": [
+        {
+          "severity": "High",
+          "description": "Not implemented - no RoomInvitation endpoints and no UI."
+        }
+      ]
+    },
+    {
+      "id": "wf-12",
+      "screen_name": "Manage Room modal - Settings tab (name, description, visibility, Save, Delete room)",
+      "status": "NotImplemented",
+      "bugs": [
+        {
+          "severity": "Fixed",
+          "description": "No settings UI and no UpdateRoom or DeleteRoom endpoints in RoomService/RoomsController."
+        }
+      ]
+    }
+  ],
+  "all_bugs": [
+    {
+      "severity": "Fixed",
+      "description": "Delete-room is not implemented: no DeleteRoomAsync in RoomService, no DELETE endpoint in RoomsController, despite Room entity having DeletedAt soft-delete column. Owners cannot delete their own rooms.",
+      "source": "requirement:2.4.6"
+    },
+    {
+      "severity": "Fixed",
+      "description": "No admin moderation endpoints exist. RoomsController lacks MakeAdmin, RemoveAdmin, RemoveMember, BanMember, UnbanMember, ListBanned. Requirement 2.4.7 is entirely absent from the backend.",
+      "source": "requirement:2.4.7"
+    },
+    {
+      "severity": "Fixed",
+      "description": "No AttachmentsController exists; LocalFileStorage is wired but never invoked. Attachment upload/download paths are entirely missing end-to-end.",
+      "source": "requirement:2.6.1"
+    },
+    {
+      "severity": "Fixed",
+      "description": "No admin UI exists: no Manage Room modal, no Members/Admins/Banned/Invitations/Settings tabs, no delete-room action.",
+      "source": "requirement:4.5"
+    },
+    {
+      "severity": "Fixed",
+      "description": "No Manage Room modal exists. No member management component under FE/src/features/rooms.",
+      "source": "wireframe:wf-8"
+    },
+    {
+      "severity": "Fixed",
+      "description": "No room settings UI and no UpdateRoom or DeleteRoom endpoints.",
+      "source": "wireframe:wf-12"
+    },
+    {
+      "severity": "Fixed",
+      "description": "No dedicated in-app 'change password while logged in' UI; Identity manage/info endpoints are hidden from swagger and there is no FE affordance.",
+      "source": "requirement:2.1.4"
+    },
+    {
+      "severity": "Fixed",
+      "description": "Account deletion path does not verifiably cascade attachment files on disk (no FilesController/attachment service).",
+      "source": "requirement:2.1.5"
+    },
+    {
+      "severity": "Fixed",
+      "description": "Active sessions list with per-session logout is entirely missing (no SessionsController, no Sessions page).",
+      "source": "requirement:2.2.4"
+    },
+    {
+      "severity": "Fixed",
+      "description": "No endpoint or UI to remove a friend; FriendList.tsx only offers Accept/Block/Message actions.",
+      "source": "requirement:2.3.4"
+    },
+    {
+      "severity": "Fixed",
+      "description": "User-to-user block does not freeze existing direct-chat messages: MessageService.SendMessageAsync checks RoomBan but not UserBlock.",
+      "source": "requirement:2.3.5"
+    },
+    {
+      "severity": "Fixed",
+      "description": "DirectChatService.OpenOrCreate does not enforce friendship; any user can DM any username.",
+      "source": "requirement:2.3.6"
+    },
+    {
+      "severity": "Fixed",
+      "description": "No invite/accept flow for private rooms. RoomInvitation entity exists but has no endpoints or UI.",
+      "source": "requirement:2.4.4"
+    },
+    {
+      "severity": "Fixed",
+      "description": "Leave-room is not implemented: no LeaveRoom method or /leave endpoint.",
+      "source": "requirement:2.4.5"
+    },
+    {
+      "severity": "Fixed",
+      "description": "RoomBan entity is read but never written; no admin API creates bans.",
+      "source": "requirement:2.4.8"
+    },
+    {
+      "severity": "Fixed",
+      "description": "Private-room invitations not implemented.",
+      "source": "requirement:2.4.9"
+    },
+    {
+      "severity": "Fixed",
+      "description": "Attachments not implemented in MessageComposer; paste handler inserts filename text and there is no explicit upload button.",
+      "source": "requirement:2.5.2"
+    },
+    {
+      "severity": "Fixed",
+      "description": "No attach button / upload mechanism in the UI; paste handler is a placeholder.",
+      "source": "requirement:2.6.2"
+    },
+    {
+      "severity": "Fixed",
+      "description": "Attachment metadata (original filename, optional comment) cannot be captured because no upload endpoint exists.",
+      "source": "requirement:2.6.3"
+    },
+    {
+      "severity": "Fixed",
+      "description": "No authenticated file-download endpoint (FilesController missing); access control not enforced.",
+      "source": "requirement:2.6.4"
+    },
+    {
+      "severity": "Fixed",
+      "description": "File size limits (20MB file / 3MB image) not enforceable because there is no upload endpoint.",
+      "source": "requirement:3.4"
+    },
+    {
+      "severity": "Fixed",
+      "description": "Admin/owner permissions and room bans cannot be exercised because their endpoints are missing.",
+      "source": "requirement:3.6"
+    },
+    {
+      "severity": "Fixed",
+      "description": "Right-side Members/Context panel (Room info, Owner, Admins, Members with presence, Invite user, Manage room) is entirely missing from ChatWindow.",
+      "source": "requirement:4.1.1"
+    },
+    {
+      "severity": "Fixed",
+      "description": "Composer lacks emoji and attach buttons (only textarea + send).",
+      "source": "requirement:4.3"
+    },
+    {
+      "severity": "Fixed",
+      "description": "TopNav missing 'Private Rooms' and 'Sessions' entries.",
+      "source": "wireframe:wf-5"
+    },
+    {
+      "severity": "Fixed",
+      "description": "Right-side members/context panel missing in chat 3-column layout.",
+      "source": "wireframe:wf-6"
+    },
+    {
+      "severity": "Fixed",
+      "description": "Composer bar missing emoji and attach buttons.",
+      "source": "wireframe:wf-7"
+    },
+    {
+      "severity": "High",
+      "description": "Admins tab of Manage Room modal not implemented.",
+      "source": "wireframe:wf-9"
+    },
+    {
+      "severity": "High",
+      "description": "Banned users tab of Manage Room modal not implemented.",
+      "source": "wireframe:wf-10"
+    },
+    {
+      "severity": "High",
+      "description": "Invitations tab of Manage Room modal not implemented.",
+      "source": "wireframe:wf-11"
+    },
+    {
+      "severity": "Medium",
+      "description": "Sign-out cannot verifiably log out only the current browser session under Identity bearer-token flow; other sessions are not tracked.",
+      "source": "requirement:2.1.3"
+    },
+    {
+      "severity": "Medium",
+      "description": "Password reset email is not actually sent in default dev configuration (DevEmailSender only logs the link).",
+      "source": "requirement:2.1.4"
+    },
+    {
+      "severity": "Medium",
+      "description": "No UI affordance to send a friend request from a chat room user list.",
+      "source": "requirement:2.3.2"
+    },
+    {
+      "severity": "Fixed",
+      "description": "No endpoint to reject an incoming friend request.",
+      "source": "requirement:2.3.4"
+    },
+    {
+      "severity": "Medium",
+      "description": "Admin-driven message deletion cannot be exercised because no admin management exists.",
+      "source": "requirement:2.5.5"
+    },
+    {
+      "severity": "Medium",
+      "description": "File persistence after access loss cannot be verified - attachments unimplemented.",
+      "source": "requirement:2.6.5"
+    },
+    {
+      "severity": "Medium",
+      "description": "Unread badges not rendered next to contacts in FriendList.tsx.",
+      "source": "requirement:2.7.1"
+    },
+    {
+      "severity": "Medium",
+      "description": "Sidebar lacks 'Public Rooms'/'Private Rooms' split, no search input, no integrated Contacts.",
+      "source": "requirement:4.1.1"
+    },
+    {
+      "severity": "Medium",
+      "description": "No 'Create room' button in the side sidebar; creation only from PublicCatalog.",
+      "source": "wireframe:wf-6"
+    },
+    {
+      "severity": "Medium",
+      "description": "Unread indicators next to contacts missing.",
+      "source": "requirement:4.4"
+    },
+    {
+      "severity": "Low",
+      "description": "No emoji picker UI (emoji still typeable via OS).",
+      "source": "requirement:2.5.2"
+    },
+    {
+      "severity": "Low",
+      "description": "InMemoryPresenceTracker is single-process; horizontal scaling would break presence.",
+      "source": "requirement:3.1"
+    },
+    {
+      "severity": "Low",
+      "description": "Jabber/XMPP federation and admin dashboards not implemented (explicitly out of scope).",
+      "source": "requirement:6"
+    },
+    {
+      "severity": "Low",
+      "description": "No distinct unauthenticated landing header with LOGO + Sign-in/Register buttons.",
+      "source": "wireframe:wf-1"
+    }
+  ]
+}
