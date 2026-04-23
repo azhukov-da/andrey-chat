@@ -96,7 +96,7 @@ export default function MessageItem({ message, isMine, roomId, replyTo }: Props)
         {editing ? (
           <div className="flex gap-2">
             <input
-              className="input input-xs input-bordered flex-1"
+              className="input input-xs input-bordered flex-1 bg-base-100 text-base-content"
               value={editText}
               onChange={(e) => setEditText(e.target.value)}
               onKeyDown={(e) => {

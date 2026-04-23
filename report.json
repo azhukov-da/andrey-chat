@@ -1,534 +1,91 @@
 {
   "summary": {
-    "total_bugs": 22,
+    "total_bugs": 12,
     "bugs_critical": 0,
     "bugs_high": 0,
-    "bugs_medium": 10,
+    "bugs_medium": 5,
     "bugs_low": 4,
-    "bugs_fixed": 8,
+    "bugs_fixed": 3,
     "bugs_non_fixable": 0
   },
   "requirements": [
-    {
-      "id": "2.1.1",
-      "title": "Self-registration with email, password, and unique username",
-      "status": "PartiallyImplemented",
-      "bugs": [
-        {
-          "severity": "Fixed",
-          "description": "Registration form (FE/src/features/auth/Register.tsx) and API (FE/src/api/auth.ts register()) accept only email and password. There is no separate Username field. The BE uses the default ASP.NET Identity /register endpoint (MapIdentityApi in Web/Program.cs) which sets UserName=Email. Therefore users cannot choose a distinct, unique username at registration as required."
-        }
-      ]
-    },
-    {
-      "id": "2.1.2",
-      "title": "Unique email, unique and immutable username, no email verification",
-      "status": "PartiallyImplemented",
-      "bugs": [
-        {
-          "severity": "Medium",
-          "description": "Because username == email (see 2.1.1), the 'username unique and distinct from email' rule is only satisfied vacuously. There is no UI to set a username, so the immutability requirement is trivially met but the feature itself is missing."
-        }
-      ]
-    },
-    {
-      "id": "2.1.3",
-      "title": "Authentication: sign in, sign out, persistent login",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.1.4",
-      "title": "Password reset and password change",
-      "status": "Implemented",
-      "bugs": [
-        {
-          "severity": "Low",
-          "description": "Forgot password UI sends to the default Identity /forgotPassword endpoint which requires an email sender to be wired up; without SMTP configuration the reset link will not be delivered. The UI always shows 'Check your email for the reset link' even on success without verifying delivery."
-        }
-      ]
-    },
-    {
-      "id": "2.1.5",
-      "title": "Account deletion with cascading room/message/file cleanup",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.2.1",
-      "title": "Presence states online/AFK/offline",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.2.2",
-      "title": "AFK after 1 minute of inactivity",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.2.3",
-      "title": "Multi-tab presence rules",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.2.4",
-      "title": "Active sessions screen with browser/IP and per-session logout",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.3.1",
-      "title": "Personal contact/friend list",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.3.2",
-      "title": "Send friend request by username and from room user list; optional text",
-      "status": "PartiallyImplemented",
-      "bugs": [
-        {
-          "severity": "Medium",
-          "description": "Friend requests can be sent by username from Contacts > Add Contact (FriendRequestDialog.tsx). However there is no 'Add friend' action exposed from the room members list in RoomMembersPanel.tsx, which violates 2.3.2 requiring request-from-room-user-list."
-        }
-      ]
-    },
-    {
-      "id": "2.3.3",
-      "title": "Friendship confirmation by recipient",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.3.4",
-      "title": "Remove friend",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.3.5",
-      "title": "User-to-user ban (blocks personal messaging, freezes history)",
-      "status": "PartiallyImplemented",
-      "bugs": [
-        {
-          "severity": "Medium",
-          "description": "MessageService blocks sending in Direct rooms when a UserBlock exists, but there is no UI indication that a direct chat is 'frozen/read-only' on the other side. Existing history remains visible because it is not deleted, but the composer shows only a generic error after submit rather than a disabled/read-only state. Friend relationship termination on block is not verified in FriendService."
-        },
-        {
-          "severity": "Low",
-          "description": "There is no visible 'Blocked users' list in the UI; unblock is not reachable through the Contacts page."
-        }
-      ]
-    },
-    {
-      "id": "2.3.6",
-      "title": "Personal messaging only between friends",
-      "status": "PartiallyImplemented",
-      "bugs": [
-        {
-          "severity": "Medium",
-          "description": "openDirectChat(username) is called from FriendList only, but DirectChatService.cs does not verify in the BE that the two users are mutual friends before creating/opening the direct room. Two strangers could still converse if a direct room already exists or is created via API."
-        }
-      ]
-    },
-    {
-      "id": "2.4.1",
-      "title": "Any user may create a chat room",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.4.2",
-      "title": "Chat room properties (name, description, visibility, owner, admins, members, bans); unique names",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.4.3",
-      "title": "Public room catalog with search and free join",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.4.4",
-      "title": "Private rooms hidden from catalog; join only by invitation",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.4.5",
-      "title": "Join/leave; owner cannot leave (must delete)",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.4.6",
-      "title": "Room deletion removes messages, files, images",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.4.7",
-      "title": "Owner/admin roles and permissions matrix",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.4.8",
-      "title": "Removing member acts as ban; lose access to messages and files",
-      "status": "Implemented",
-      "bugs": [
-        {
-          "severity": "Fixed",
-          "description": "In ManageRoomDialog, the Members panel has both 'Remove' and 'Ban' buttons, but the requirement says 'removing a user is treated as a ban'. Having two separate actions lets an admin 'Remove' a user who could then rejoin a public room freely, contradicting 2.4.8."
-        }
-      ]
-    },
-    {
-      "id": "2.4.9",
-      "title": "Users may invite others to private rooms",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.5.1",
-      "title": "Personal and room chats identical in UI/features; personal chats have no admins",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.5.2",
-      "title": "Message content: text, multiline, emoji, attachments, replies; 3KB limit; UTF-8",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.5.3",
-      "title": "Message replies visually outlined/quoted",
-      "status": "PartiallyImplemented",
-      "bugs": [
-        {
-          "severity": "Fixed",
-          "description": "ReplyToMessageId is stored on the backend and sent when composing, but MessageItem.tsx does not render a quoted block showing the replied-to message's author/snippet. The rendered message never references the original. The MessageSchema on the FE lacks fields like replyToText/replyToAuthorUserName, and the API does not include them. This violates 2.5.3."
-        }
-      ]
-    },
-    {
-      "id": "2.5.4",
-      "title": "Edit own messages; 'edited' indicator",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.5.5",
-      "title": "Message deletion by author or room admin",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.5.6",
-      "title": "Persistent chronological history; infinite scroll; offline delivery",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.6.1",
-      "title": "Images and arbitrary files",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.6.2",
-      "title": "Upload via button and paste",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.6.3",
-      "title": "Preserve original file name; optional attachment comment",
-      "status": "PartiallyImplemented",
-      "bugs": [
-        {
-          "severity": "Medium",
-          "description": "The composer passes the draft text as attachment 'comment' on upload, but there is no explicit, dedicated UI field to provide an attachment comment (no prompt/input tied to the pick action). The wireframe shows a distinct 'comment:' field under the attachment card."
-        }
-      ]
-    },
-    {
-      "id": "2.6.4",
-      "title": "Access control on attachments tied to room membership",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.6.5",
-      "title": "Files persist after uploader loses access",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.7.1",
-      "title": "Unread indicators on rooms and personal dialogs",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "2.7.2",
-      "title": "Low-latency presence updates",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "4.1",
-      "title": "General layout: top menu, center messages, bottom input, sidebar",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "4.1.1",
-      "title": "Right side layout: rooms/contacts list collapses; right-side members",
-      "status": "PartiallyImplemented",
-      "bugs": [
-        {
-          "severity": "Medium",
-          "description": "RightSidebar.tsx has Rooms, Invitations, and Direct Messages collapsibles but does NOT include a Contacts (friends) list in the sidebar, contrary to 4.1.1 and the wireframes which show CONTACTS inline in the side panel with presence and unread counts."
-        }
-      ]
-    },
-    {
-      "id": "4.2",
-      "title": "Chat window autoscroll/infinite scroll behavior",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "4.3",
-      "title": "Composer: multiline, emoji, attachments, reply",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "4.4",
-      "title": "Unread badges near room and contact names",
-      "status": "PartiallyImplemented",
-      "bugs": [
-        {
-          "severity": "Low",
-          "description": "Unread badges are shown next to rooms and next to direct-message conversations, but because there is no separate Contacts list in the sidebar (see 4.1.1), per-contact unread indicators on the contact list itself are missing."
-        }
-      ]
-    },
-    {
-      "id": "4.5",
-      "title": "Admin UI via menus and modal dialogs (ban/unban, remove, admins, delete)",
-      "status": "Implemented",
-      "bugs": []
-    },
-    {
-      "id": "6",
-      "title": "Advanced: Jabber/XMPP support and federation",
-      "status": "NotImplemented",
-      "bugs": [
-        {
-          "severity": "Low",
-          "description": "No Jabber/XMPP module, federation logic, admin dashboard, or federation statistics page found anywhere in BE or FE. Advanced requirement is optional and not implemented."
-        }
-      ]
-    }
+    { "id": "2.1.1", "title": "Self-registration with email, password, username", "status": "Implemented", "bugs": [] },
+    { "id": "2.1.2", "title": "Registration rules (unique email/username, immutable username, no email verification)", "status": "Implemented", "bugs": [] },
+    { "id": "2.1.3", "title": "Authentication: sign in, sign out, persistent login", "status": "Implemented", "bugs": [] },
+    { "id": "2.1.4", "title": "Password management (reset + change)", "status": "Implemented", "bugs": [] },
+    { "id": "2.1.5", "title": "Account removal with cascade", "status": "Implemented", "bugs": [] },
+    { "id": "2.2.1", "title": "Presence states online/AFK/offline", "status": "Implemented", "bugs": [] },
+    { "id": "2.2.2", "title": "AFK after 1 minute inactivity", "status": "Implemented", "bugs": [] },
+    { "id": "2.2.3", "title": "Multi-tab presence aggregation", "status": "Implemented", "bugs": [] },
+    { "id": "2.2.4", "title": "Active sessions list and revocation", "status": "Implemented", "bugs": [] },
+    { "id": "2.3.1", "title": "Personal friend list", "status": "Implemented", "bugs": [] },
+    { "id": "2.3.2", "title": "Send friend requests by username and from room user list", "status": "PartiallyImplemented", "bugs": [
+      { "severity": "Medium", "description": "The room members panel (RoomMembersPanel.tsx) does not expose an action to send a friend request from the user list in a chat room. Only username-based requests via the Contacts page are available, violating requirement 2.3.2's second bullet." }
+    ] },
+    { "id": "2.3.3", "title": "Friendship requires recipient confirmation", "status": "Implemented", "bugs": [] },
+    { "id": "2.3.4", "title": "Remove friend", "status": "Implemented", "bugs": [] },
+    { "id": "2.3.5", "title": "User-to-user ban (read-only history, friendship terminated)", "status": "PartiallyImplemented", "bugs": [
+      { "severity": "Medium", "description": "The Contacts UI labels the action 'Block' rather than 'Ban' as stated in requirements. Users may find the action but its effect on freezing existing DM history as read-only cannot be verified from UI labels alone and needs explicit indication." }
+    ] },
+    { "id": "2.3.6", "title": "Personal messaging only between friends with no mutual ban", "status": "Implemented", "bugs": [] },
+    { "id": "2.4.1", "title": "Any registered user may create a chat room", "status": "Implemented", "bugs": [] },
+    { "id": "2.4.2", "title": "Room properties (name, description, visibility, owner, admins, members, banned list); unique names", "status": "Implemented", "bugs": [] },
+    { "id": "2.4.3", "title": "Public room catalog with search", "status": "Implemented", "bugs": [] },
+    { "id": "2.4.4", "title": "Private rooms not visible publicly; invite-only", "status": "Implemented", "bugs": [] },
+    { "id": "2.4.5", "title": "Join/leave rules; owner cannot leave", "status": "Implemented", "bugs": [] },
+    { "id": "2.4.6", "title": "Room deletion removes messages/files", "status": "Implemented", "bugs": [] },
+    { "id": "2.4.7", "title": "Owner/admin roles and permissions", "status": "Implemented", "bugs": [] },
+    { "id": "2.4.8", "title": "Room ban rules (removed = banned, cannot rejoin)", "status": "Implemented", "bugs": [] },
+    { "id": "2.4.9", "title": "Private room invitations", "status": "Implemented", "bugs": [] },
+    { "id": "2.5.1", "title": "Room and personal chat equivalence", "status": "Implemented", "bugs": [] },
+    { "id": "2.5.2", "title": "Message content (text, multiline, emoji, attachments, reply); 3KB limit; UTF-8", "status": "Implemented", "bugs": [] },
+    { "id": "2.5.3", "title": "Replies quoted visually", "status": "Implemented", "bugs": [] },
+    { "id": "2.5.4", "title": "Message editing with 'edited' indicator", "status": "Implemented", "bugs": [] },
+    { "id": "2.5.5", "title": "Message deletion by author or admins", "status": "PartiallyImplemented", "bugs": [
+      { "severity": "Medium", "description": "MessageItem.tsx only shows the delete (x) control when isMine is true. Room admins cannot delete other users' messages from the UI even though the requirement (and the backend API) allows it." }
+    ] },
+    { "id": "2.5.6", "title": "Persistent history, chronological order, infinite scroll, offline delivery", "status": "Implemented", "bugs": [] },
+    { "id": "2.6.1", "title": "Send images and arbitrary file types", "status": "Implemented", "bugs": [] },
+    { "id": "2.6.2", "title": "Upload via button and paste", "status": "Implemented", "bugs": [] },
+    { "id": "2.6.3", "title": "Preserve original file name; optional comment", "status": "PartiallyImplemented", "bugs": [
+      { "severity": "Low", "description": "Attachment comment in MessageComposer.tsx reuses the current text box content as the comment; there is no dedicated 'add a comment to the attachment' UI per requirement 2.6.3." }
+    ] },
+    { "id": "2.6.4", "title": "Access control: only members may download", "status": "Implemented", "bugs": [] },
+    { "id": "2.6.5", "title": "File persistence after losing access", "status": "Implemented", "bugs": [] },
+    { "id": "2.7.1", "title": "Unread indicators on rooms and contacts", "status": "PartiallyImplemented", "bugs": [
+      { "severity": "Medium", "description": "TopNav shows a global unread total next to 'Public Rooms' only, mixing DM and room unreads into one badge; wireframe and requirement expect separate unread indicators near individual room names and contact names. Individual room badges exist in the sidebar, but the Contacts list does not show per-contact unread badges." }
+    ] },
+    { "id": "2.7.2", "title": "Low-latency presence updates", "status": "Implemented", "bugs": [] },
+    { "id": "3.4", "title": "File size limits (20MB file, 3MB image)", "status": "Implemented", "bugs": [] },
+    { "id": "6", "title": "Advanced: Jabber/XMPP support", "status": "NotImplemented", "bugs": [
+      { "severity": "Low", "description": "No Jabber/XMPP protocol support found in BE or FE. No admin connection dashboard, no federation, no Jabber UI screens. This is the optional advanced requirement." }
+    ] }
   ],
   "wireframes": [
-    {
-      "id": "wf-1",
-      "screen_name": "Landing with Sign In / Register / Forgot password panels",
-      "status": "PartiallyImplemented",
-      "bugs": [
-        {
-          "severity": "Fixed",
-          "description": "Wireframe Register panel includes: Email, Username, Password, Confirm password. The implemented Register.tsx has only Email, Password, Confirm password. The Username field is missing from the form and from the backing API (see requirement 2.1.1)."
-        },
-        {
-          "severity": "Low",
-          "description": "There is no unified landing page with 'LOGO [Sign in] [Register]' header; /login, /register, /forgot are separate self-contained card pages. Acceptable functionally but cosmetically different from the wireframe."
-        }
-      ]
-    },
-    {
-      "id": "wf-2",
-      "screen_name": "Main chat screen (TopNav, right rooms/contacts sidebar, center chat, members panel, composer)",
-      "status": "PartiallyImplemented",
-      "bugs": [
-        {
-          "severity": "Medium",
-          "description": "Right sidebar shows Rooms, Invitations and Direct Messages, but the 'CONTACTS' section with presence dots and unread counts from the wireframe is absent in RightSidebar.tsx."
-        },
-        {
-          "severity": "Medium",
-          "description": "Wireframe splits rooms into 'Public Rooms' and 'Private Rooms' sub-accordions within the sidebar; the implementation lumps all group rooms into a single 'Rooms' collapsible."
-        },
-        {
-          "severity": "Fixed",
-          "description": "Reply-quote rendering missing: wireframe shows '[10:25] Carol replied to Bob: > Hello team\\n Can we make this private?'. MessageItem.tsx does not render the quoted original message above the reply body."
-        },
-        {
-          "severity": "Medium",
-          "description": "Attachment card in wireframe shows 'comment:' row beneath the file name. Attachments are shown with an optional comment only when present, and there is no dedicated UI to add a comment when uploading; paste/pick flow reuses composer text as the comment."
-        },
-        {
-          "severity": "Low",
-          "description": "Composer layout matches wireframe closely, but the 'Replying to: Bob x' chip doesn't show the replied-to user's name, only the literal text 'Replying to message'."
-        }
-      ]
-    },
-    {
-      "id": "wf-3",
-      "screen_name": "Manage Room modal with tabs Members/Admins/Banned users/Invitations/Settings",
-      "status": "PartiallyImplemented",
-      "bugs": [
-        {
-          "severity": "Fixed",
-          "description": "Wireframe defines FIVE tabs: Members, Admins, Banned users, Invitations, Settings. ManageRoomDialog.tsx implements only FOUR: Members, Admins, Banned, Settings. There is no 'Invitations' tab; invitations are only reachable via an ad-hoc 'Invite user' button + window.prompt in the header."
-        },
-        {
-          "severity": "Fixed",
-          "description": "Banned users tab in the wireframe shows columns 'Username / Banned by / Date/time / Actions'. Implementation shows only username and reason, missing 'Banned by' and 'Date/time' columns, in violation of 2.4.7 ('view who banned each banned user')."
-        },
-        {
-          "severity": "Medium",
-          "description": "Members tab lacks 'Status' (online/AFK/offline) and 'Search member' filter shown in the wireframe; the implemented list has neither presence indicators nor a search input."
-        },
-        {
-          "severity": "Fixed",
-          "description": "Members tab of the implementation exposes separate 'Ban' and 'Remove' actions. Per requirement 2.4.8 a remove is defined as a ban; the wireframe shows 'Ban' and 'Remove from room' as distinct actions, creating ambiguity, but the app then lets admins remove without banning, allowing rejoin of public rooms. This creates a reliability defect against 3.6 consistency of room bans."
-        },
-        {
-          "severity": "Medium",
-          "description": "Admins tab in the wireframe includes explicit note 'alice = owner (cannot lose admin rights)'. Implementation only disables the Remove button by omission; it does not label the owner or show the rule."
-        }
-      ]
-    }
+    { "id": "wf-1", "screen_name": "Landing / Sign in / Register / Forgot password", "status": "Implemented", "bugs": [] },
+    { "id": "wf-2", "screen_name": "Main chat layout (top menu, sidebars, message area, composer)", "status": "PartiallyImplemented", "bugs": [
+      { "severity": "Fixed", "description": "Wireframe shows a unified rooms+contacts sidebar with an accordion that collapses when entering a room. The implementation has a right sidebar with Rooms and Direct Messages sections but lacks a Contacts section with presence dots, and there is no automatic compaction when a room is opened." },
+      { "severity": "Medium", "description": "The sidebar has no combined 'Contacts' section with presence dots and unread badges as shown in the wireframe; contacts are only reachable via the Contacts page. Direct Messages list partially fills this role but omits general contacts the user has not DM-ed." },
+      { "severity": "Low", "description": "Sidebar in the wireframe includes a 'Create room' button at the bottom; implementation exposes room creation only via the Public Rooms page '+ New Room' button." },
+      { "severity": "Low", "description": "The wireframe shows a sidebar Search box for filtering rooms/contacts which is not present in RightSidebar.tsx." }
+    ] },
+    { "id": "wf-3", "screen_name": "Manage Room modal (Members/Admins/Banned/Invitations/Settings)", "status": "PartiallyImplemented", "bugs": [
+      { "severity": "Fixed", "description": "Members tab does not include a 'Search member' input as shown in the wireframe." },
+      { "severity": "Fixed", "description": "Members table in the Manage Room dialog does not display per-member Status (online/AFK/offline) column; only role and username are shown. Wireframe expects Username/Status/Role/Actions columns." }
+    ] }
   ],
   "all_bugs": [
-    {
-      "severity": "Fixed",
-      "description": "Registration form has no Username field; backend uses default Identity endpoint that sets UserName=Email. Users cannot choose a distinct unique username as required by 2.1.1.",
-      "source": "requirement:2.1.1"
-    },
-    {
-      "severity": "Fixed",
-      "description": "Reply-quote rendering missing in MessageItem.tsx: replyToMessageId is stored but the replied-to message is not shown above the new message body.",
-      "source": "requirement:2.5.3"
-    },
-    {
-      "severity": "Fixed",
-      "description": "Register wireframe requires Username field; implemented Register.tsx omits it.",
-      "source": "wireframe:wf-1"
-    },
-    {
-      "severity": "Fixed",
-      "description": "Reply-quote rendering is absent in the message list, contrary to the main chat wireframe.",
-      "source": "wireframe:wf-2"
-    },
-    {
-      "severity": "Fixed",
-      "description": "Manage Room modal is missing the Invitations tab shown in the wireframe; invitations use an ad-hoc window.prompt instead.",
-      "source": "wireframe:wf-3"
-    },
-    {
-      "severity": "Fixed",
-      "description": "Banned users tab lacks 'Banned by' and 'Date/time' columns required by the wireframe and by 2.4.7 ('view who banned each banned user').",
-      "source": "wireframe:wf-3"
-    },
-    {
-      "severity": "Fixed",
-      "description": "Members panel offers both 'Remove' and 'Ban'; removing does not create a room ban, so removed users can rejoin public rooms, violating 2.4.8 and 3.6 consistency.",
-      "source": "wireframe:wf-3"
-    },
-    {
-      "severity": "Fixed",
-      "description": "Same removal-vs-ban ambiguity surfaces in the requirement verification.",
-      "source": "requirement:2.4.8"
-    },
-    {
-      "severity": "Medium",
-      "description": "No distinct Username concept: usernames equal emails, making the '2.1.2 unique username distinct from email' rule vacuous.",
-      "source": "requirement:2.1.2"
-    },
-    {
-      "severity": "Medium",
-      "description": "No way to add a friend from the room members list (RoomMembersPanel has no 'Add friend' action).",
-      "source": "requirement:2.3.2"
-    },
-    {
-      "severity": "Medium",
-      "description": "Direct chat composer does not render a frozen/read-only state when the other user is blocked; only a post-submit error is shown.",
-      "source": "requirement:2.3.5"
-    },
-    {
-      "severity": "Medium",
-      "description": "DirectChatService does not validate that two users are mutual friends before opening a direct chat.",
-      "source": "requirement:2.3.6"
-    },
-    {
-      "severity": "Medium",
-      "description": "Attachment comment has no dedicated input; composer draft text is reused, contrary to 2.6.3 wording and wireframe layout.",
-      "source": "requirement:2.6.3"
-    },
-    {
-      "severity": "Medium",
-      "description": "Right sidebar lacks a Contacts list with presence/unread badges (4.1.1 and main-chat wireframe).",
-      "source": "requirement:4.1.1"
-    },
-    {
-      "severity": "Medium",
-      "description": "Right sidebar does not split rooms into Public/Private accordions as shown in the wireframe.",
-      "source": "wireframe:wf-2"
-    },
-    {
-      "severity": "Medium",
-      "description": "Attachment comment field is missing from the upload UI per wireframe.",
-      "source": "wireframe:wf-2"
-    },
-    {
-      "severity": "Medium",
-      "description": "Members tab has no Status column (online/AFK/offline) and no member search; both appear in the wireframe.",
-      "source": "wireframe:wf-3"
-    },
-    {
-      "severity": "Medium",
-      "description": "Admins tab does not display the 'owner cannot lose admin rights' clarification from the wireframe.",
-      "source": "wireframe:wf-3"
-    },
-    {
-      "severity": "Low",
-      "description": "Forgot-password flow depends on SMTP; UI always claims success without verification.",
-      "source": "requirement:2.1.4"
-    },
-    {
-      "severity": "Low",
-      "description": "No Blocked users list/unblock UI reachable from Contacts.",
-      "source": "requirement:2.3.5"
-    },
-    {
-      "severity": "Low",
-      "description": "Per-contact unread badges missing because Contacts list is absent from the sidebar.",
-      "source": "requirement:4.4"
-    },
-    {
-      "severity": "Low",
-      "description": "Reply chip in composer shows literal 'Replying to message' instead of the replied-to user's name as in the wireframe.",
-      "source": "wireframe:wf-2"
-    },
-    {
-      "severity": "Low",
-      "description": "No Jabber/XMPP dashboard or federation statistics implemented (optional advanced requirement 6).",
-      "source": "requirement:6"
-    },
-    {
-      "severity": "Low",
-      "description": "Auth pages are separate card pages rather than the LOGO + [Sign in] [Register] top-bar landing in the wireframe.",
-      "source": "wireframe:wf-1"
-    }
+    { "severity": "Fixed", "description": "Wireframe shows a unified rooms+contacts sidebar with an accordion that collapses when entering a room. The implementation has a right sidebar with Rooms and Direct Messages sections but lacks a Contacts section with presence dots, and there is no automatic compaction when a room is opened.", "source": "wireframe:wf-2" },
+    { "severity": "Fixed", "description": "Members tab in Manage Room dialog does not include a 'Search member' input as shown in the wireframe.", "source": "wireframe:wf-3" },
+    { "severity": "Fixed", "description": "Members table in the Manage Room dialog does not display per-member Status (online/AFK/offline) column; only role and username are shown. Wireframe expects Username/Status/Role/Actions columns.", "source": "wireframe:wf-3" },
+    { "severity": "Medium", "description": "The room members panel (RoomMembersPanel.tsx) does not expose an action to send a friend request from the user list in a chat room. Only username-based requests via the Contacts page are available, violating requirement 2.3.2's second bullet.", "source": "requirement:2.3.2" },
+    { "severity": "Medium", "description": "The Contacts UI labels the action 'Block' rather than 'Ban' as stated in requirements; UI does not clearly indicate that existing DM history becomes read-only/frozen after the ban.", "source": "requirement:2.3.5" },
+    { "severity": "Medium", "description": "MessageItem.tsx only shows the delete (x) control when isMine is true. Room admins cannot delete other users' messages from the UI even though the requirement (and the backend API) allows it.", "source": "requirement:2.5.5" },
+    { "severity": "Medium", "description": "TopNav shows a global unread total next to 'Public Rooms' only, mixing DM and room unreads into one badge; per-contact unread badges are missing in the Contacts list.", "source": "requirement:2.7.1" },
+    { "severity": "Medium", "description": "The sidebar has no combined 'Contacts' section with presence dots and unread badges as shown in the wireframe; contacts are only reachable via the Contacts page.", "source": "wireframe:wf-2" },
+    { "severity": "Low", "description": "Attachment comment in MessageComposer.tsx reuses the current text box content as the comment; there is no dedicated 'add a comment to the attachment' UI per requirement 2.6.3.", "source": "requirement:2.6.3" },
+    { "severity": "Low", "description": "No Jabber/XMPP protocol support found in BE or FE. No admin connection dashboard, no federation, no Jabber UI screens. This is the optional advanced requirement.", "source": "requirement:6" },
+    { "severity": "Low", "description": "Sidebar in the wireframe includes a 'Create room' button at the bottom; implementation exposes room creation only via the Public Rooms page '+ New Room' button.", "source": "wireframe:wf-2" },
+    { "severity": "Low", "description": "The wireframe shows a sidebar Search box for filtering rooms/contacts which is not present in RightSidebar.tsx.", "source": "wireframe:wf-2" }
   ]
 }

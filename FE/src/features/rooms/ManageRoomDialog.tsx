@@ -14,6 +14,8 @@ import {
   updateRoom,
 } from '@/api/rooms'
 import { RoomRole, type Room, type RoomMember, type RoomVisibilityValue } from '@/types'
+import PresenceDot from '@/features/chat/PresenceDot'
+import { usePresence } from '@/hooks/usePresence'
 
 interface Props {
   room: Room
@@ -161,6 +163,16 @@ export default function ManageRoomDialog({ room, onClose }: Props) {
   const members: RoomMember[] = membersQuery.data ?? []
   const admins = members.filter((m) => m.role === RoomRole.Admin || m.role === RoomRole.Owner)
 
+  const [memberSearch, setMemberSearch] = useState('')
+  const filteredMembers = members.filter((m) => {
+    const q = memberSearch.trim().toLowerCase()
+    if (!q) return true
+    return (
+      (m.userName ?? '').toLowerCase().includes(q) ||
+      (m.displayName ?? '').toLowerCase().includes(q)
+    )
+  })
+
   const handleBan = (userId: string) => {
     const reason = window.prompt('Optional reason for ban:')
     if (reason && reason.trim().length > 0) {
@@ -222,33 +234,50 @@ export default function ManageRoomDialog({ room, onClose }: Props) {
           <div data-testid="members-panel">
             {membersQuery.isLoading && <div className="loading loading-spinner" />}
             {membersQuery.isError && <div className="alert alert-error text-sm">Failed to load members.</div>}
-            <ul className="divide-y divide-base-300">
-              {members.map((m) => (
-                <li key={m.userId} className="flex items-center justify-between py-2">
-                  <div>
-                    <div className="font-medium">{m.displayName || m.userName}</div>
-                    <div className="text-xs text-base-content/60">
-                      @{m.userName} -
-                      {m.role === RoomRole.Owner ? ' Owner' : m.role === RoomRole.Admin ? ' Admin' : ' Member'}
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    {isOwner && m.role === RoomRole.Member && (
-                      <button className="btn btn-xs" onClick={() => makeAdminMut.mutate(m.userId)}>Make admin</button>
-                    )}
-                    {isOwner && m.role === RoomRole.Admin && (
-                      <button className="btn btn-xs" onClick={() => removeAdminMut.mutate(m.userId)}>Remove admin</button>
-                    )}
-                    {isAdmin && m.role !== RoomRole.Owner && (
-                      <>
-                        <button className="btn btn-xs btn-warning" onClick={() => handleBan(m.userId)}>Ban</button>
-                        <button className="btn btn-xs btn-error" onClick={() => removeMemberMut.mutate(m.userId)}>Remove</button>
-                      </>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <div className="mb-3">
+              <input
+                type="search"
+                data-testid="members-search"
+                className="input input-bordered input-sm w-full"
+                placeholder="Search member"
+                value={memberSearch}
+                onChange={(e) => setMemberSearch(e.target.value)}
+                aria-label="Search member"
+              />
+            </div>
+            <div className="overflow-x-auto">
+              <table className="table table-sm" data-testid="members-table">
+                <thead>
+                  <tr>
+                    <th data-testid="members-col-username">Username</th>
+                    <th data-testid="members-col-status">Status</th>
+                    <th data-testid="members-col-role">Role</th>
+                    <th data-testid="members-col-actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredMembers.length === 0 && !membersQuery.isLoading && (
+                    <tr data-testid="members-empty">
+                      <td colSpan={4} className="py-2 text-sm text-base-content/60">
+                        {memberSearch.trim() ? 'No members match your search.' : 'No members.'}
+                      </td>
+                    </tr>
+                  )}
+                  {filteredMembers.map((m) => (
+                    <MemberRow
+                      key={m.userId}
+                      m={m}
+                      isOwner={isOwner}
+                      isAdmin={isAdmin}
+                      onMakeAdmin={() => makeAdminMut.mutate(m.userId)}
+                      onRemoveAdmin={() => removeAdminMut.mutate(m.userId)}
+                      onBan={() => handleBan(m.userId)}
+                      onRemove={() => removeMemberMut.mutate(m.userId)}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
@@ -452,5 +481,52 @@ export default function ManageRoomDialog({ room, onClose }: Props) {
       </div>
       <div className="modal-backdrop" onClick={onClose} />
     </dialog>
+  )
+}
+
+interface MemberRowProps {
+  m: RoomMember
+  isOwner: boolean
+  isAdmin: boolean
+  onMakeAdmin: () => void
+  onRemoveAdmin: () => void
+  onBan: () => void
+  onRemove: () => void
+}
+
+function MemberRow({ m, isOwner, isAdmin, onMakeAdmin, onRemoveAdmin, onBan, onRemove }: MemberRowProps) {
+  const status = usePresence(m.userId)
+  const statusLabel = status === 'online' ? 'Online' : status === 'afk' ? 'AFK' : 'Offline'
+  const roleLabel = m.role === RoomRole.Owner ? 'Owner' : m.role === RoomRole.Admin ? 'Admin' : 'Member'
+  return (
+    <tr data-testid={`members-row-${m.userId}`}>
+      <td>
+        <div className="font-medium">{m.displayName || m.userName}</div>
+        <div className="text-xs text-base-content/60">@{m.userName}</div>
+      </td>
+      <td data-testid={`member-status-${m.userId}`}>
+        <span className="inline-flex items-center gap-2">
+          <PresenceDot userId={m.userId} />
+          <span className="text-sm">{statusLabel}</span>
+        </span>
+      </td>
+      <td data-testid={`member-role-${m.userId}`}>{roleLabel}</td>
+      <td>
+        <div className="flex gap-2">
+          {isOwner && m.role === RoomRole.Member && (
+            <button className="btn btn-xs" onClick={onMakeAdmin}>Make admin</button>
+          )}
+          {isOwner && m.role === RoomRole.Admin && (
+            <button className="btn btn-xs" onClick={onRemoveAdmin}>Remove admin</button>
+          )}
+          {isAdmin && m.role !== RoomRole.Owner && (
+            <>
+              <button className="btn btn-xs btn-warning" onClick={onBan}>Ban</button>
+              <button className="btn btn-xs btn-error" onClick={onRemove}>Remove</button>
+            </>
+          )}
+        </div>
+      </td>
+    </tr>
   )
 }

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { NavLink } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { acceptInvitation, getMyInvitations, getMyRooms, rejectInvitation } from '@/api/rooms'
@@ -21,7 +21,26 @@ export default function RightSidebar() {
   })
   const unreadCounts = useUnreadStore((s) => s.counts)
   const collapsed = useUiStore((s) => s.sidebarCollapsed)
+  const activeRoomId = useUiStore((s) => s.activeRoomId)
   const me = useAuthStore((s) => s.me)
+
+  // Auto-compaction: when a room is active, collapse all accordion sections.
+  // User can still click to expand individual sections.
+  const [roomsOpen, setRoomsOpen] = useState(true)
+  const [dmsOpen, setDmsOpen] = useState(true)
+  const [invitationsOpen, setInvitationsOpen] = useState(true)
+
+  useEffect(() => {
+    if (activeRoomId) {
+      setRoomsOpen(false)
+      setDmsOpen(false)
+      setInvitationsOpen(false)
+    } else {
+      setRoomsOpen(true)
+      setDmsOpen(true)
+      setInvitationsOpen(true)
+    }
+  }, [activeRoomId])
 
   const acceptMut = useMutation({
     mutationFn: (id: string) => acceptInvitation(id),
@@ -40,15 +59,16 @@ export default function RightSidebar() {
   const groupRooms = rooms.filter((r) => r.kind === RoomKind.Group)
   const directRooms = rooms.filter((r) => r.kind === RoomKind.Direct)
 
-  const directUserIdsKey = directRooms
-    .map((r) => r.otherUserId)
-    .filter((id): id is string => !!id)
-    .sort()
-    .join(',')
+  // Hydrate presence for direct-message partners.
+  const presenceUserIdsKey = useMemo(() => {
+    const ids = new Set<string>()
+    for (const r of directRooms) if (r.otherUserId) ids.add(r.otherUserId)
+    return Array.from(ids).sort().join(',')
+  }, [directRooms])
 
   useEffect(() => {
-    if (!directUserIdsKey) return
-    const userIds = directUserIdsKey.split(',')
+    if (!presenceUserIdsKey) return
+    const userIds = presenceUserIdsKey.split(',')
     let cancelled = false
 
     const hydrate = async () => {
@@ -75,14 +95,23 @@ export default function RightSidebar() {
     const onReconnected = () => { void hydrate() }
     hub.onreconnected(onReconnected)
     return () => { cancelled = true }
-  }, [directUserIdsKey])
+  }, [presenceUserIdsKey])
 
   if (collapsed) return null
 
   return (
-    <aside className="w-64 border-l border-base-300 bg-base-100 flex flex-col overflow-y-auto">
+    <aside
+      className="w-64 border-l border-base-300 bg-base-100 flex flex-col overflow-y-auto"
+      data-testid="right-sidebar"
+      data-compact={activeRoomId ? 'true' : 'false'}
+    >
       <div className="collapse collapse-arrow">
-        <input type="checkbox" defaultChecked />
+        <input
+          type="checkbox"
+          checked={roomsOpen}
+          onChange={(e) => setRoomsOpen(e.target.checked)}
+          data-testid="sidebar-rooms-toggle"
+        />
         <div className="collapse-title font-semibold text-sm uppercase tracking-wide text-base-content/60 px-4 py-3">
           Rooms
         </div>
@@ -107,7 +136,11 @@ export default function RightSidebar() {
 
       {invitations.length > 0 && (
         <div className="collapse collapse-arrow">
-          <input type="checkbox" defaultChecked />
+          <input
+            type="checkbox"
+            checked={invitationsOpen}
+            onChange={(e) => setInvitationsOpen(e.target.checked)}
+          />
           <div className="collapse-title font-semibold text-sm uppercase tracking-wide text-base-content/60 px-4 py-3">
             Invitations ({invitations.length})
           </div>
@@ -143,7 +176,12 @@ export default function RightSidebar() {
       )}
 
       <div className="collapse collapse-arrow">
-        <input type="checkbox" defaultChecked />
+        <input
+          type="checkbox"
+          checked={dmsOpen}
+          onChange={(e) => setDmsOpen(e.target.checked)}
+          data-testid="sidebar-dms-toggle"
+        />
         <div className="collapse-title font-semibold text-sm uppercase tracking-wide text-base-content/60 px-4 py-3">
           Direct Messages
         </div>
@@ -169,6 +207,7 @@ export default function RightSidebar() {
           })}
         </div>
       </div>
+
     </aside>
   )
 }
