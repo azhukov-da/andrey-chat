@@ -47,6 +47,15 @@ public class ChatHub : Hub
         await _presenceTracker.UpdateActivityAsync(Context.ConnectionId, active);
     }
 
+    public async Task<Dictionary<string, string>> GetPresenceFor(string[] userIds)
+    {
+        if (userIds == null || userIds.Length == 0)
+            return new Dictionary<string, string>();
+
+        var statuses = await _presenceTracker.GetUsersStatusAsync(userIds);
+        return statuses.ToDictionary(kv => kv.Key, kv => kv.Value.ToString());
+    }
+
     public async Task SendMessage(Guid roomId, string text, Guid? replyToMessageId)
     {
         var result = await _messageService.SendMessageAsync(roomId, text, replyToMessageId);

@@ -81,6 +81,9 @@ public class RoomService : IRoomService
                 Kind = m.Room.Kind,
                 OwnerId = m.Room.OwnerId,
                 OwnerUserName = m.Room.Owner != null ? m.Room.Owner.UserName : null,
+                OtherUserId = m.Room.Kind == RoomKind.Direct
+                    ? m.Room.Memberships.Where(mm => mm.UserId != _currentUser.UserId).Select(mm => mm.UserId).FirstOrDefault()
+                    : null,
                 IsFrozen = m.Room.IsFrozen,
                 CreatedAt = m.Room.CreatedAt,
                 MemberCount = m.Room.Memberships.Count,
@@ -101,6 +104,9 @@ public class RoomService : IRoomService
                 Room = r,
                 MemberCount = r.Memberships.Count,
                 OwnerUserName = r.Owner != null ? r.Owner.UserName : null,
+                OtherUserId = r.Kind == RoomKind.Direct && _currentUser.UserId != null
+                    ? r.Memberships.Where(m => m.UserId != _currentUser.UserId).Select(m => m.UserId).FirstOrDefault()
+                    : null,
                 MyRole = _currentUser.UserId != null
                     ? r.Memberships.Where(m => m.UserId == _currentUser.UserId).Select(m => (RoomRole?)m.Role).FirstOrDefault()
                     : null
@@ -122,6 +128,7 @@ public class RoomService : IRoomService
             Kind = room.Room.Kind,
             OwnerId = room.Room.OwnerId,
             OwnerUserName = room.OwnerUserName,
+            OtherUserId = room.OtherUserId,
             IsFrozen = room.Room.IsFrozen,
             CreatedAt = room.Room.CreatedAt,
             MemberCount = room.MemberCount,

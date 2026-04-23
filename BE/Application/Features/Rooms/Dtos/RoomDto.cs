@@ -11,6 +11,7 @@ public class RoomDto
     public RoomKind Kind { get; set; }
     public string? OwnerId { get; set; }
     public string? OwnerUserName { get; set; }
+    public string? OtherUserId { get; set; }
     public bool IsFrozen { get; set; }
     public DateTime CreatedAt { get; set; }
     public int MemberCount { get; set; }

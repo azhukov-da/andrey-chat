@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getMyRooms, getMyInvitations, acceptInvitation, rejectInvitation } from '@/api/rooms'
-import { RoomVisibility } from '@/types'
+import { RoomVisibility, RoomKind } from '@/types'
 
 export default function PrivateRooms() {
   const navigate = useNavigate()
@@ -17,7 +17,9 @@ export default function PrivateRooms() {
     queryFn: getMyInvitations,
   })
 
-  const privateRooms = (myRooms ?? []).filter((r) => r.visibility === RoomVisibility.Private)
+  const privateRooms = (myRooms ?? []).filter(
+    (r) => r.visibility === RoomVisibility.Private && r.kind !== RoomKind.Direct
+  )
 
   const acceptMutation = useMutation({
     mutationFn: (id: string) => acceptInvitation(id),

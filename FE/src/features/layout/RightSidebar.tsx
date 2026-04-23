@@ -1,11 +1,15 @@
+import { useEffect } from 'react'
 import { NavLink } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { acceptInvitation, getMyInvitations, getMyRooms, rejectInvitation } from '@/api/rooms'
 import { useUnreadStore } from '@/stores/unreadStore'
 import { useUiStore } from '@/stores/uiStore'
-import { RoomKind } from '@/types'
+import { RoomKind, type PresenceStatus } from '@/types'
 import PresenceDot from '@/features/chat/PresenceDot'
 import { useAuthStore } from '@/stores/authStore'
+import { getHubConnection } from '@/realtime/hubClient'
+import { usePresenceStore } from '@/stores/presenceStore'
+import * as signalR from '@microsoft/signalr'
 
 export default function RightSidebar() {
   const queryClient = useQueryClient()
@@ -35,6 +39,43 @@ export default function RightSidebar() {
 
   const groupRooms = rooms.filter((r) => r.kind === RoomKind.Group)
   const directRooms = rooms.filter((r) => r.kind === RoomKind.Direct)
+
+  const directUserIdsKey = directRooms
+    .map((r) => r.otherUserId)
+    .filter((id): id is string => !!id)
+    .sort()
+    .join(',')
+
+  useEffect(() => {
+    if (!directUserIdsKey) return
+    const userIds = directUserIdsKey.split(',')
+    let cancelled = false
+
+    const hydrate = async () => {
+      const hub = getHubConnection()
+      for (let i = 0; i < 20 && hub.state !== signalR.HubConnectionState.Connected; i++) {
+        await new Promise((r) => setTimeout(r, 500))
+        if (cancelled) return
+      }
+      if (cancelled || hub.state !== signalR.HubConnectionState.Connected) return
+      try {
+        const result = await hub.invoke<Record<string, string>>('GetPresenceFor', userIds)
+        if (cancelled || !result) return
+        const update = usePresenceStore.getState().update
+        for (const [userId, status] of Object.entries(result)) {
+          update(userId, status.toLowerCase() as PresenceStatus)
+        }
+      } catch {
+        // ignore — presence events will eventually sync state
+      }
+    }
+
+    void hydrate()
+    const hub = getHubConnection()
+    const onReconnected = () => { void hydrate() }
+    hub.onreconnected(onReconnected)
+    return () => { cancelled = true }
+  }, [directUserIdsKey])
 
   if (collapsed) return null
 
@@ -119,7 +160,7 @@ export default function RightSidebar() {
                 }
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <PresenceDot userId={room.ownerId ?? ''} />
+                  <PresenceDot userId={room.otherUserId ?? ''} />
                   <span className="truncate">{otherName}</span>
                 </div>
                 {unread > 0 && <span className="badge badge-primary badge-sm">{unread}</span>}

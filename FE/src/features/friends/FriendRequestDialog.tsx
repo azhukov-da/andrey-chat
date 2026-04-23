@@ -7,12 +7,12 @@ interface Props {
 }
 
 export default function FriendRequestDialog({ onClose }: Props) {
-  const [username, setUsername] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [message, setMessage] = useState('')
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: () => sendFriendRequest(username.trim(), message.trim() || undefined),
+    mutationFn: () => sendFriendRequest(identifier.trim(), message.trim() || undefined),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['friends'] })
       onClose()
@@ -25,12 +25,12 @@ export default function FriendRequestDialog({ onClose }: Props) {
         <h3 className="font-bold text-lg mb-4">Add Contact</h3>
         <div className="space-y-3">
           <div className="form-control">
-            <label className="label"><span className="label-text">Username</span></label>
+            <label className="label"><span className="label-text">Username or email</span></label>
             <input
               className="input input-bordered"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter username"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="Enter username or email"
             />
           </div>
           <div className="form-control">
@@ -50,7 +50,7 @@ export default function FriendRequestDialog({ onClose }: Props) {
           <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
           <button
             className="btn btn-primary"
-            disabled={!username.trim() || mutation.isPending}
+            disabled={!identifier.trim() || mutation.isPending}
             onClick={() => mutation.mutate()}
           >
             {mutation.isPending ? <span className="loading loading-spinner loading-xs" /> : 'Send Request'}

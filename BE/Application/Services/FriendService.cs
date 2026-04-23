@@ -44,19 +44,26 @@ public class FriendService : IFriendService
         return friends;
     }
 
-    public async Task<Result> SendFriendRequestAsync(string username, string? message)
+    public async Task<Result> SendFriendRequestAsync(string identifier, string? message)
     {
         if (!_currentUser.IsAuthenticated || _currentUser.UserId == null)
             return Errors.Authorization.Unauthorized;
 
-        if (username == _currentUser.UserName)
-            return Errors.Friendship.CannotRequestSelf;
+        if (string.IsNullOrWhiteSpace(identifier))
+            return Errors.User.NotFoundByUsername(identifier ?? string.Empty);
 
-        var targetUser = await _context.Users
-            .FirstOrDefaultAsync(u => u.UserName == username);
+        var trimmed = identifier.Trim();
+        var isEmail = trimmed.Contains('@');
+
+        var targetUser = isEmail
+            ? await _context.Users.FirstOrDefaultAsync(u => u.Email == trimmed)
+            : await _context.Users.FirstOrDefaultAsync(u => u.UserName == trimmed);
 
         if (targetUser == null)
-            return Errors.User.NotFoundByUsername(username);
+            return Errors.User.NotFoundByUsername(trimmed);
+
+        if (targetUser.Id == _currentUser.UserId)
+            return Errors.Friendship.CannotRequestSelf;
 
         var userIds = new[] { _currentUser.UserId, targetUser.Id }.OrderBy(id => id).ToArray();
 

@@ -125,7 +125,7 @@ export default function ChatWindow() {
                 Manage room
               </button>
             )}
-            {isMember && !isOwner && (
+            {isMember && !isOwner && isGroupRoom && (
               <button
                 className="btn btn-sm btn-outline"
                 onClick={handleLeave}

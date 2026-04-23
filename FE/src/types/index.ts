@@ -34,6 +34,7 @@ export const RoomSchema = z.object({
   kind: z.number(),
   ownerId: z.string().nullable().optional(),
   ownerUserName: z.string().nullable().optional(),
+  otherUserId: z.string().nullable().optional(),
   isFrozen: z.boolean(),
   createdAt: z.string(),
   memberCount: z.number(),
