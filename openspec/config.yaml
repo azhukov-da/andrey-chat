@@ -1,0 +1,40 @@
+schema: spec-driven
+
+context: |
+  Real-time web chat: rooms, direct messages, contacts, presence, attachments.
+  Backend: .NET 10 Clean Architecture (Domain/Application/Infrastructure/Web),
+  EF Core + PostgreSQL, ASP.NET Core Identity (bearer + refresh tokens), SignalR hub at /hubs/chat.
+  Frontend: React 19 + Vite + TypeScript, TanStack Query + Zustand, Tailwind/DaisyUI.
+  Orchestrated with Docker Compose (db, be, fe); the frontend nginx proxies all backend traffic.
+  Source requirements: chat_requirements.md, wireframes.txt, TheStory.md.
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+# Add your tech stack, conventions, style guides, domain knowledge, etc.
+# Example:
+#   context: |
+#     Tech stack: TypeScript, React, Node.js
+#     We use conventional commits
+#     Domain: e-commerce platform
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing
