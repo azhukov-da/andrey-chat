@@ -15,21 +15,13 @@ See [BE/CLAUDE.md](BE/CLAUDE.md) and [FE/CLAUDE.md](FE/CLAUDE.md) for stack-spec
 
 ## Restart and test the entire project
 
-The canonical workflow used by the `restart` agent (see [.claude/agents/restart.md](.claude/agents/restart.md)):
+To restart and wait for readiness, use the `restart` agent (see [.claude/agents/restart.md](.claude/agents/restart.md)) — it runs `start.bat` and polls `http://localhost:3000` on the escalating 10s → 30s → 60s → 120s schedule.
 
-1. **Restart**: run `start.bat` from the project root in the background. It executes `docker-compose up -d --build`, waits 15s, and opens `http://localhost:3000`.
-   - Background launch: `cmd.exe /c start.bat` (do not block on it).
-   - Do not kill or restart `start.bat` between polls.
-2. **Wait for readiness**: poll `http://localhost:3000` with the escalating schedule **10s → 30s → 60s → 120s** (cumulative 220s). Each poll:
-   ```
-   curl -s -o /dev/null -w "%{http_code}" http://localhost:3000
-   ```
-   Stop on `200`. If still not 200 after all four intervals, report failure with the last status seen.
-3. **Test**:
-   - Manual: open `http://localhost:3000`, sign up / sign in, exercise the affected flow.
-   - Programmatic: drive the live site with Playwright (the `analyze` and `fix` agents do this against `http://localhost:3000`).
-   - Frontend unit tests: `cd FE && npm test` (vitest).
-   - Backend builds during the docker build of the `be` service; for local dev, see [BE/CLAUDE.md](BE/CLAUDE.md).
+Then **test**:
+- Manual: open `http://localhost:3000`, sign up / sign in, exercise the affected flow.
+- Programmatic: drive the live site with Playwright (the `analyze` and `fix` agents do this against `http://localhost:3000`).
+- Frontend unit tests: `cd FE && npm test` (vitest).
+- Backend builds during the docker build of the `be` service; for local dev, see [BE/CLAUDE.md](BE/CLAUDE.md).
 
 Service URLs once up:
 
