@@ -20,17 +20,20 @@ public class AttachmentsController : ControllerBase
     private readonly ICurrentUser _currentUser;
     private readonly IFileStorage _storage;
     private readonly IChatNotifier _notifier;
+    private readonly ITranscriptionJobQueue _transcriptionQueue;
 
     public AttachmentsController(
         IApplicationDbContext context,
         ICurrentUser currentUser,
         IFileStorage storage,
-        IChatNotifier notifier)
+        IChatNotifier notifier,
+        ITranscriptionJobQueue transcriptionQueue)
     {
         _context = context;
         _currentUser = currentUser;
         _storage = storage;
         _notifier = notifier;
+        _transcriptionQueue = transcriptionQueue;
     }
 
     [HttpPost("upload")]
@@ -49,7 +52,8 @@ public class AttachmentsController : ControllerBase
 
         var contentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType;
         var isImage = contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
-        var kind = isImage ? AttachmentKind.Image : AttachmentKind.File;
+        var isAudio = contentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase);
+        var kind = isImage ? AttachmentKind.Image : isAudio ? AttachmentKind.Audio : AttachmentKind.File;
 
         var maxBytes = isImage ? MaxImageBytes : MaxFileBytes;
         if (file.Length > maxBytes)
@@ -133,12 +137,18 @@ public class AttachmentsController : ControllerBase
                     ContentType = attachment.ContentType,
                     SizeBytes = attachment.SizeBytes,
                     Kind = attachment.Kind.ToString(),
-                    Comment = attachment.Comment
+                    Comment = attachment.Comment,
+                    TranscriptText = attachment.TranscriptText
                 }
             }
         };
 
         await _notifier.MessageReceivedAsync(roomId, dto, ct);
+
+        if (kind == AttachmentKind.Audio)
+        {
+            _transcriptionQueue.Enqueue(new TranscriptionJob(attachment.Id, roomId, storagePath, contentType, attachment.FileName));
+        }
 
         return Ok(dto);
     }

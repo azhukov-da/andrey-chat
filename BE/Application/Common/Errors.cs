@@ -68,6 +68,13 @@ public static class Errors
         public static Error InvalidContentType => new("Attachment.InvalidContentType", "Invalid file content type.");
     }
 
+    public static class Transcription
+    {
+        public static Error EmptyOrUndecodable => new("Transcription.EmptyOrUndecodable", "Audio clip is empty or could not be decoded.");
+        public static Error TooLong(int limitSeconds) => new("Transcription.TooLong", $"Audio duration exceeds the {limitSeconds}s limit.");
+        public static Error Unavailable => new("Transcription.Unavailable", "Transcription is currently unavailable.");
+    }
+
     public static class Friendship
     {
         public static Error NotFound => new("Friendship.NotFound", "Friendship not found.");

@@ -158,7 +158,8 @@ public class MessageService : IMessageService
                     ContentType = a.ContentType,
                     SizeBytes = a.SizeBytes,
                     Kind = a.Kind.ToString(),
-                    Comment = a.Comment
+                    Comment = a.Comment,
+                    TranscriptText = a.TranscriptText
                 }).ToList()
             })
             .ToListAsync();

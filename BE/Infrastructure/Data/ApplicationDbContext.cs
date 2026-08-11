@@ -177,6 +177,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
             entity.Property(e => e.Comment)
                 .HasMaxLength(500);
 
+            entity.Property(e => e.TranscriptText)
+                .HasMaxLength(4000);
+
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("NOW()");
         });

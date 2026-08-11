@@ -61,6 +61,16 @@ public static class DependencyInjection
         services.AddScoped<ICurrentUser, CurrentUserService>();
         services.AddScoped<IAuthService, AuthService>();
 
+        var sttBaseUrl = configuration["Stt:BaseUrl"] ?? "http://stt:9000";
+        services.AddHttpClient<ITranscriptionService, FasterWhisperTranscriptionService>(client =>
+        {
+            client.BaseAddress = new Uri(sttBaseUrl);
+            client.Timeout = TimeSpan.FromMinutes(5);
+        });
+
+        services.AddSingleton<ITranscriptionJobQueue, TranscriptionJobQueue>();
+        services.AddHostedService<TranscriptionBackgroundService>();
+
         return services;
     }
 }

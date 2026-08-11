@@ -35,6 +35,11 @@ interface RoomDeletedPayload {
   roomId: string
 }
 
+interface AttachmentTranscribedPayload {
+  attachmentId: string
+  transcriptText: string
+}
+
 type CursorPaged<T> = { items: T[]; nextCursor?: string | null }
 type Pages<T> = { pages: CursorPaged<T>[] }
 
@@ -113,6 +118,28 @@ export function registerHubEvents(hub: HubConnection, queryClient: QueryClient, 
     useUnreadStore.getState().set(payload.roomId, payload.unreadCount)
   }
 
+  const onAttachmentTranscribed = (payload: AttachmentTranscribedPayload) => {
+    queryClient.setQueriesData<Pages<Message>>({ queryKey: ['messages'] }, (old) => {
+      if (!old) return old
+      return {
+        ...old,
+        pages: old.pages.map((page) => ({
+          ...page,
+          items: page.items.map((m) =>
+            m.attachments.some((a) => a.id === payload.attachmentId)
+              ? {
+                  ...m,
+                  attachments: m.attachments.map((a) =>
+                    a.id === payload.attachmentId ? { ...a, transcriptText: payload.transcriptText } : a
+                  ),
+                }
+              : m
+          ),
+        })),
+      }
+    })
+  }
+
   hub.on('MessageReceived', onMessageReceived)
   hub.on('MessageEdited', onMessageEdited)
   hub.on('MessageDeleted', onMessageDeleted)
@@ -121,6 +148,7 @@ export function registerHubEvents(hub: HubConnection, queryClient: QueryClient, 
   hub.on('RoomDeleted', onRoomDeleted)
   hub.on('FriendRequestReceived', onFriendRequestReceived)
   hub.on('UnreadUpdated', onUnreadUpdated)
+  hub.on('AttachmentTranscribed', onAttachmentTranscribed)
 
   return () => {
     hub.off('MessageReceived', onMessageReceived)
@@ -131,5 +159,6 @@ export function registerHubEvents(hub: HubConnection, queryClient: QueryClient, 
     hub.off('RoomDeleted', onRoomDeleted)
     hub.off('FriendRequestReceived', onFriendRequestReceived)
     hub.off('UnreadUpdated', onUnreadUpdated)
+    hub.off('AttachmentTranscribed', onAttachmentTranscribed)
   }
 }

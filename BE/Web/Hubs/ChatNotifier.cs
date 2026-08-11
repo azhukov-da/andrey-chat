@@ -66,6 +66,12 @@ public class ChatNotifier : IChatNotifier
             .SendAsync("RoomDeleted", new { roomId }, cancellationToken);
     }
 
+    public async Task AttachmentTranscribedAsync(Guid roomId, Guid attachmentId, string transcriptText, CancellationToken cancellationToken = default)
+    {
+        await _hubContext.Clients.Group($"room:{roomId}")
+            .SendAsync("AttachmentTranscribed", new { attachmentId, transcriptText }, cancellationToken);
+    }
+
     public async Task AddUserToRoomGroupAsync(string userId, Guid roomId, CancellationToken cancellationToken = default)
     {
         var connectionIds = await _presenceTracker.GetConnectionIdsAsync(userId);

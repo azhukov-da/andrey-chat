@@ -2,10 +2,13 @@ import { useRef, useEffect, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { sendMessage } from '@/api/messages'
 import { uploadAttachment } from '@/api/attachments'
+import { transcribeAudio } from '@/api/transcribe'
 import { useUiStore } from '@/stores/uiStore'
 import { MAX_MESSAGE_BYTES } from '@/types'
 import { getHubConnection } from '@/realtime/hubClient'
 import type { Message } from '@/types'
+
+const MAX_DICTATION_SECONDS = 120
 
 interface Props {
   roomId: string
@@ -19,6 +22,12 @@ export default function MessageComposer({ roomId }: Props) {
   const [text, setText] = useState(() => getDraft(roomId))
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [emojiOpen, setEmojiOpen] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const [micUnavailable, setMicUnavailable] = useState(false)
+  const [dictateError, setDictateError] = useState<string | null>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const recordedChunksRef = useRef<Blob[]>([])
+  const autoStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const replyToId = useUiStore((s) => s.replyTo.get(roomId) ?? null)
 
   const byteCount = new TextEncoder().encode(text).length
@@ -90,6 +99,70 @@ export default function MessageComposer({ roomId }: Props) {
       setText('')
     }
   }
+
+  const dictateMutation = useMutation({
+    mutationFn: (blob: Blob) => transcribeAudio(blob),
+    onSuccess: ({ text }) => {
+      setDictateError(null)
+      if (!text) return
+      setText((prev) => (prev.trim() ? `${prev} ${text}` : text))
+    },
+    onError: (e: Error) => setDictateError(e.message),
+  })
+
+  const stopRecording = () => {
+    if (autoStopTimerRef.current) {
+      clearTimeout(autoStopTimerRef.current)
+      autoStopTimerRef.current = null
+    }
+    const recorder = mediaRecorderRef.current
+    if (recorder && recorder.state !== 'inactive') {
+      recorder.stop()
+    }
+  }
+
+  const startRecording = async () => {
+    setDictateError(null)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const recorder = new MediaRecorder(stream)
+      mediaRecorderRef.current = recorder
+      recordedChunksRef.current = []
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) recordedChunksRef.current.push(e.data)
+      }
+      recorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop())
+        setIsRecording(false)
+        const blob = new Blob(recordedChunksRef.current, { type: recorder.mimeType || 'audio/webm' })
+        recordedChunksRef.current = []
+        if (blob.size > 0) dictateMutation.mutate(blob)
+      }
+
+      recorder.start()
+      setIsRecording(true)
+      autoStopTimerRef.current = setTimeout(stopRecording, MAX_DICTATION_SECONDS * 1000)
+    } catch {
+      setMicUnavailable(true)
+    }
+  }
+
+  const toggleDictate = () => {
+    if (isRecording) {
+      stopRecording()
+    } else {
+      void startRecording()
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      if (autoStopTimerRef.current) clearTimeout(autoStopTimerRef.current)
+      const recorder = mediaRecorderRef.current
+      if (recorder && recorder.state !== 'inactive') recorder.stop()
+    }
+  }, [])
 
   const EMOJIS = ['😀','😁','😂','🤣','😃','😄','😅','😆','😉','😊','😍','😘','😎','🤔','😐','😴','😢','😡','👍','👎','👏','🙏','💪','🔥','🎉','❤️','💔','✨','⭐','☑️']
 
@@ -177,6 +250,17 @@ export default function MessageComposer({ roomId }: Props) {
         >
           📎
         </button>
+        <button
+          type="button"
+          className={`btn btn-ghost btn-sm self-end ${isRecording ? 'text-error' : ''}`}
+          aria-label={isRecording ? 'Stop dictation' : 'Dictate message'}
+          title={micUnavailable ? 'Microphone unavailable' : isRecording ? 'Stop dictation' : 'Dictate message'}
+          disabled={micUnavailable || dictateMutation.isPending}
+          onClick={toggleDictate}
+          data-testid="dictate-button"
+        >
+          {isRecording ? '⏹' : '🎤'}
+        </button>
         <textarea
           ref={textareaRef}
           className="textarea textarea-bordered flex-1 resize-none min-h-[44px] max-h-32"
@@ -204,6 +288,18 @@ export default function MessageComposer({ roomId }: Props) {
       )}
       {uploadError && (
         <p className="text-xs text-error mt-1">{uploadError}</p>
+      )}
+      {isRecording && (
+        <p className="text-xs opacity-60 mt-1">Recording… (auto-stops after {MAX_DICTATION_SECONDS}s)</p>
+      )}
+      {dictateMutation.isPending && (
+        <p className="text-xs opacity-60 mt-1">Transcribing…</p>
+      )}
+      {micUnavailable && (
+        <p className="text-xs text-error mt-1">Microphone access is unavailable.</p>
+      )}
+      {dictateError && (
+        <p className="text-xs text-error mt-1">{dictateError}</p>
       )}
     </div>
   )

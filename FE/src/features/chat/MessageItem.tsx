@@ -132,8 +132,10 @@ export default function MessageItem({ message, isMine, roomId, replyTo }: Props)
 
 function AttachmentView({ attachment }: { attachment: AttachmentMetadata }) {
   const isImage = attachment.kind === 'Image'
+  const isAudio = attachment.kind === 'Audio'
   const [imgUrl, setImgUrl] = useState<string | null>(null)
   const [imgError, setImgError] = useState(false)
+  const [audioUrl, setAudioUrl] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isImage) return
@@ -155,6 +157,26 @@ function AttachmentView({ attachment }: { attachment: AttachmentMetadata }) {
     }
   }, [attachment.id, isImage])
 
+  useEffect(() => {
+    if (!isAudio) return
+    let revokeUrl: string | null = null
+    let cancelled = false
+    loadAttachmentObjectUrl(attachment.id)
+      .then((url) => {
+        if (cancelled) {
+          URL.revokeObjectURL(url)
+          return
+        }
+        revokeUrl = url
+        setAudioUrl(url)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+      if (revokeUrl) URL.revokeObjectURL(revokeUrl)
+    }
+  }, [attachment.id, isAudio])
+
   const handleDownload = () => {
     void downloadAttachment(attachment.id, attachment.fileName).catch(() => {})
   }
@@ -166,8 +188,11 @@ function AttachmentView({ attachment }: { attachment: AttachmentMetadata }) {
       {isImage && imgUrl && !imgError && (
         <img src={imgUrl} alt={attachment.fileName} className="max-h-48 rounded mb-1" />
       )}
+      {isAudio && audioUrl && (
+        <audio src={audioUrl} controls className="w-full mb-1" data-testid="attachment-audio" />
+      )}
       <div className="flex items-center gap-2 text-sm">
-        <span className="opacity-70">{isImage ? '🖼' : '📄'}</span>
+        <span className="opacity-70">{isImage ? '🖼' : isAudio ? '🎤' : '📄'}</span>
         <button
           type="button"
           className="link link-primary truncate"
@@ -181,6 +206,11 @@ function AttachmentView({ attachment }: { attachment: AttachmentMetadata }) {
       </div>
       {attachment.comment && (
         <div className="text-xs opacity-70 mt-1">{attachment.comment}</div>
+      )}
+      {isAudio && attachment.transcriptText && (
+        <div className="text-xs opacity-70 mt-1 italic" data-testid="attachment-transcript">
+          {attachment.transcriptText}
+        </div>
       )}
     </div>
   )

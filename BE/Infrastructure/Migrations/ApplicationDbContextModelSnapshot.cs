@@ -136,6 +136,10 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<string>("TranscriptText")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("MessageId");

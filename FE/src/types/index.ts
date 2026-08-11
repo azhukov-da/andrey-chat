@@ -58,6 +58,7 @@ export const AttachmentMetadataSchema = z.object({
   sizeBytes: z.number(),
   kind: z.string(),
   comment: z.string().nullable().optional(),
+  transcriptText: z.string().nullable().optional(),
 })
 export type AttachmentMetadata = z.infer<typeof AttachmentMetadataSchema>
 

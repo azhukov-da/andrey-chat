@@ -15,5 +15,6 @@ public class Attachment
     public long SizeBytes { get; set; }
     public AttachmentKind Kind { get; set; }
     public string? Comment { get; set; }
+    public string? TranscriptText { get; set; }
     public DateTime CreatedAt { get; set; }
 }

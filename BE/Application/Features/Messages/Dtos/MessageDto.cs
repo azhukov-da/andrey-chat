@@ -23,4 +23,5 @@ public class AttachmentMetadataDto
     public long SizeBytes { get; set; }
     public string Kind { get; set; } = string.Empty;
     public string? Comment { get; set; }
+    public string? TranscriptText { get; set; }
 }
