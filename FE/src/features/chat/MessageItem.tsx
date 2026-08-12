@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { editMessage, deleteMessage } from '@/api/messages'
 import { downloadAttachment, loadAttachmentObjectUrl } from '@/api/attachments'
 import { formatTime } from '@/lib/formatTime'
+import VoiceMessagePlayer from './VoiceMessagePlayer'
 import { useUiStore } from '@/stores/uiStore'
 import type { Message, AttachmentMetadata } from '@/types'
 
@@ -188,22 +189,47 @@ function AttachmentView({ attachment }: { attachment: AttachmentMetadata }) {
       {isImage && imgUrl && !imgError && (
         <img src={imgUrl} alt={attachment.fileName} className="max-h-48 rounded mb-1" />
       )}
-      {isAudio && audioUrl && (
-        <audio src={audioUrl} controls className="w-full mb-1" data-testid="attachment-audio" />
+      {isAudio ? (
+        <div className="w-60">
+          {audioUrl ? (
+            <VoiceMessagePlayer url={audioUrl} />
+          ) : (
+            <div className="flex items-center gap-2 h-8 text-xs opacity-50">
+              <span className="loading loading-spinner loading-xs" />
+              Loading audio…
+            </div>
+          )}
+          <div className="flex items-center gap-2 text-xs opacity-60 mt-1">
+            <span>🎤 Voice message</span>
+            <span>·</span>
+            <span className="whitespace-nowrap">{sizeKb} KB</span>
+            <span>·</span>
+            <button
+              type="button"
+              className="link"
+              onClick={handleDownload}
+              title={`Download ${attachment.fileName}`}
+              data-testid="attachment-download"
+            >
+              Download
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 text-sm">
+          <span className="opacity-70">{isImage ? '🖼' : '📄'}</span>
+          <button
+            type="button"
+            className="link link-primary truncate"
+            onClick={handleDownload}
+            title={`Download ${attachment.fileName}`}
+            data-testid="attachment-download"
+          >
+            {attachment.fileName}
+          </button>
+          <span className="opacity-50 text-xs whitespace-nowrap">{sizeKb} KB</span>
+        </div>
       )}
-      <div className="flex items-center gap-2 text-sm">
-        <span className="opacity-70">{isImage ? '🖼' : isAudio ? '🎤' : '📄'}</span>
-        <button
-          type="button"
-          className="link link-primary truncate"
-          onClick={handleDownload}
-          title={`Download ${attachment.fileName}`}
-          data-testid="attachment-download"
-        >
-          {attachment.fileName}
-        </button>
-        <span className="opacity-50 text-xs whitespace-nowrap">{sizeKb} KB</span>
-      </div>
       {attachment.comment && (
         <div className="text-xs opacity-70 mt-1">{attachment.comment}</div>
       )}
