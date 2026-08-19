@@ -1,4 +1,5 @@
-import { defineConfig } from 'vite'
+// `vitest/config` re-exports vite's defineConfig widened with the `test` block below.
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 

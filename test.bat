@@ -34,16 +34,10 @@ if errorlevel 1 (
 )
 
 rem The backend integration layer talks to the db container over the host port that
-rem docker-compose.tests.yml publishes. docker-compose.yml deliberately does not.
-powershell -NoProfile -Command "try { $c = New-Object Net.Sockets.TcpClient; $c.Connect('localhost', 55432); $c.Close(); exit 0 } catch { exit 1 }" >nul 2>&1
-if errorlevel 1 (
-    echo   [X] PostgreSQL is not reachable on localhost:55432.
-    echo       Start it with:
-    echo         docker compose -f docker-compose.yml -f docker-compose.tests.yml up -d db
-    set "MISSING=1"
-) else (
-    echo   [OK] PostgreSQL on localhost:55432
-)
+rem docker-compose.tests.yml publishes. docker-compose.yml deliberately does not, so this
+rem script brings the container up itself with the test overlay applied.
+call :ensure_db
+if errorlevel 1 set "MISSING=1"
 
 rem The end-to-end layer drives the assembled stack through the frontend's nginx.
 powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri http://localhost:3000 -UseBasicParsing -TimeoutSec 10; if ($r.StatusCode -eq 200) { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
@@ -169,3 +163,38 @@ if "!EXIT!"=="0" (
 
 popd
 exit /b !EXIT!
+
+rem ----------------------------------------------------------------------------
+rem  Makes PostgreSQL reachable on localhost:55432, starting the db container with
+rem  the test overlay if it is not already up. Returns 1 when it cannot be reached.
+rem ----------------------------------------------------------------------------
+:ensure_db
+call :probe_db
+if not errorlevel 1 (
+    echo   [OK] PostgreSQL on localhost:55432
+    exit /b 0
+)
+
+echo   [..] PostgreSQL is not reachable on localhost:55432; starting the db container...
+rem --wait blocks until the container's own healthcheck passes, so the migrations the
+rem test harness runs on startup do not race an accepting-but-not-ready server.
+docker compose -f docker-compose.yml -f docker-compose.tests.yml up -d --wait db
+if errorlevel 1 (
+    echo   [X] Could not start the db container. Start it by hand with:
+    echo         docker compose -f docker-compose.yml -f docker-compose.tests.yml up -d db
+    exit /b 1
+)
+
+call :probe_db
+if errorlevel 1 (
+    echo   [X] The db container is up but localhost:55432 is still not reachable.
+    echo       Check that docker-compose.tests.yml is publishing the port:
+    echo         docker compose -f docker-compose.yml -f docker-compose.tests.yml ps db
+    exit /b 1
+)
+echo   [OK] PostgreSQL on localhost:55432 ^(started by this script^)
+exit /b 0
+
+:probe_db
+powershell -NoProfile -Command "try { $c = New-Object Net.Sockets.TcpClient; $c.Connect('localhost', 55432); $c.Close(); exit 0 } catch { exit 1 }" >nul 2>&1
+exit /b %errorlevel%

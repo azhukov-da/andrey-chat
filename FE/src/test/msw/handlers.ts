@@ -1,4 +1,5 @@
 import { http, HttpResponse } from 'msw'
+import type { UserProfile } from '@/types'
 
 /**
  * Default handlers for the endpoints `FE/src/api/*` calls, so a component test only has to
@@ -18,12 +19,14 @@ import { http, HttpResponse } from 'msw'
  * shows up as a loud failure naming the URL.
  */
 
-export const testUser = {
+// Typed as UserProfile so the fixture cannot drift from the schema `apiJson` parses responses
+// with — an extra or missing field here would otherwise only surface as a parse failure at runtime.
+export const testUser: UserProfile = {
   id: 'user-1',
   userName: 'tester',
   email: 'tester@example.test',
   displayName: 'Tester',
-  avatarUrl: null,
+  createdAt: '2026-01-01T00:00:00.000Z',
 }
 
 export const testTokens = {

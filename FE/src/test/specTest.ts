@@ -1,4 +1,4 @@
-import { test } from 'vitest'
+import { test, type TestFunction } from 'vitest'
 
 /**
  * Declares which specified scenarios a test verifies.
@@ -22,7 +22,7 @@ import { test } from 'vitest'
 export function specTest(
   scenarioIds: string | string[],
   title: string,
-  fn: Parameters<typeof test>[1]
+  fn: TestFunction
 ): void {
   test(specTitle(scenarioIds, title), fn)
 }
@@ -31,7 +31,7 @@ export function specTest(
 specTest.only = (
   scenarioIds: string | string[],
   title: string,
-  fn: Parameters<typeof test>[1]
+  fn: TestFunction
 ): void => {
   test.only(specTitle(scenarioIds, title), fn)
 }
@@ -39,7 +39,7 @@ specTest.only = (
 specTest.skip = (
   scenarioIds: string | string[],
   title: string,
-  fn: Parameters<typeof test>[1]
+  fn: TestFunction
 ): void => {
   test.skip(specTitle(scenarioIds, title), fn)
 }

@@ -46,7 +46,7 @@ A fourth layer, load and capacity, is specified but not yet built; it is deliber
 
 | Layer | Needs |
 |---|---|
-| Backend integration | PostgreSQL on `localhost:55432` — `docker compose -f docker-compose.yml -f docker-compose.tests.yml up -d db` |
+| Backend integration | PostgreSQL on `localhost:55432` — `docker compose -f docker-compose.yml -f docker-compose.tests.yml up -d db`. `test.bat` starts this container itself if it is not already up. |
 | Frontend unit | Nothing running. `cd FE && npm install` is enough. |
 | End-to-end | The whole stack serving on `http://localhost:3000` — `start.bat` |
 

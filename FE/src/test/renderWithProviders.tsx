@@ -76,7 +76,7 @@ export function renderWithProviders(
 export function seedAuth({
   accessToken = 'test-access-token',
   refreshToken = 'test-refresh-token',
-  me = testUser as UserProfile,
+  me = testUser,
 }: { accessToken?: string; refreshToken?: string; me?: UserProfile } = {}): void {
   sessionStorage.setItem('accessToken', accessToken)
   sessionStorage.setItem('refreshToken', refreshToken)
