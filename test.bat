@@ -76,12 +76,21 @@ echo ============================================================
 echo  1/4  Backend integration  (BE\Tests.Integration)
 echo ============================================================
 set "BE_RESULT=passed"
+rem Everything after the bare -- goes to Microsoft.Testing.Platform rather than to the SDK.
+rem VSTest is not an option here: the .NET 10 SDK refuses to run a platform test project through
+rem it, so the trx tools\spec-coverage reads and the cobertura tools\coverage-gate measures come
+rem from the platform's own reporting extensions. --coverage-settings needs an absolute path,
+rem because the test executable runs from its own output directory rather than from here.
 dotnet test BE\Tests.Integration\Tests.Integration.csproj ^
     --nologo ^
-    --settings BE\coverlet.runsettings ^
-    --collect:"XPlat Code Coverage" ^
-    --logger "trx;LogFileName=integration.trx" ^
-    --results-directory "%TRX_DIR%"
+    -- ^
+    --report-trx ^
+    --report-trx-filename integration.trx ^
+    --results-directory "%TRX_DIR%" ^
+    --coverage ^
+    --coverage-settings "%CD%\BE\codecoverage.runsettings" ^
+    --coverage-output-format cobertura ^
+    --coverage-output coverage.cobertura.xml
 if errorlevel 1 set "BE_RESULT=FAILED"
 
 echo.

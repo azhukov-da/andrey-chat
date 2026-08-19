@@ -19,6 +19,7 @@ namespace Tests.Integration.UserSessions;
 /// Everything goes through <c>/api/Sessions</c> over real HTTP with real Identity tokens; no test
 /// calls <c>ISessionService</c> directly.
 /// </summary>
+[Collection(ChatAppCollection.Name)]
 public class SessionsTests(ChatAppFixture fixture) : IntegrationTest(fixture)
 {
     // --- Listing ---

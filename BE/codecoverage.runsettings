@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="Code Coverage">
+        <Configuration>
+          <CodeCoverage>
+            <ModulePaths>
+              <Exclude>
+                <ModulePath>.*Tests\.Integration\.dll$</ModulePath>
+                <ModulePath>.*Tests\.Load\.dll$</ModulePath>
+                <ModulePath>.*xunit.*\.dll$</ModulePath>
+                <ModulePath>.*Microsoft\.Testing\..*\.dll$</ModulePath>
+                <ModulePath>.*FluentAssertions\.dll$</ModulePath>
+                <ModulePath>.*Respawn\.dll$</ModulePath>
+              </Exclude>
+            </ModulePaths>
+            <Sources>
+              <Exclude>
+                <Source>.*\\Migrations\\.*</Source>
+                <Source>.*\.Designer\.cs$</Source>
+                <Source>.*\.g\.cs$</Source>
+                <Source>.*\.generated\.cs$</Source>
+              </Exclude>
+            </Sources>
+            <Functions>
+              <Exclude>
+                <Function>.*::get_.*</Function>
+                <Function>.*::set_.*</Function>
+              </Exclude>
+            </Functions>
+            <Attributes>
+              <Exclude>
+                <Attribute>^System\.Diagnostics\.CodeAnalysis\.ExcludeFromCodeCoverageAttribute$</Attribute>
+                <Attribute>^System\.Runtime\.CompilerServices\.CompilerGeneratedAttribute$</Attribute>
+                <Attribute>^System\.CodeDom\.Compiler\.GeneratedCodeAttribute$</Attribute>
+                <Attribute>^System\.ObsoleteAttribute$</Attribute>
+              </Exclude>
+            </Attributes>
+            <CollectFromChildProcesses>True</CollectFromChildProcesses>
+            <UseVerifiableInstrumentation>False</UseVerifiableInstrumentation>
+          </CodeCoverage>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

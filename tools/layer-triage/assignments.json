@@ -1,0 +1,554 @@
+{
+  "_comment": [
+    "Which layer owns which specified scenario. Keys are either `<capability>/<requirement-slug>`",
+    "— applying to every scenario under that requirement — or a full scenario identifier, which",
+    "overrides the requirement-level default. Requirements that split across layers list only their",
+    "exceptions. `node tools/layer-triage` fails on an unassigned scenario or a stale key, so this",
+    "file cannot drift from the specs unnoticed.",
+    "Layers: backend | frontend | e2e | load | tooling."
+  ],
+
+  "_capabilityNotes": {
+    "chat-ui-shell": [
+      "This capability has no `BE/Tests.Integration/ChatUiShell/` area — the only one of the fourteen",
+      "with none. Two of the rows below look server-shaped and are not: route guarding and the root",
+      "redirect are decided by the router before any request leaves the browser, so a backend test",
+      "there could observe nothing at all, and the API's own refusal of a caller with no token is a",
+      "real server rule that `authentication/bearer-token-authorization` already claims. A backend",
+      "area here would have produced either tests asserting the absence of a request or a second",
+      "claim on a scenario that is already covered."
+    ]
+  },
+
+  "attachments/uploading-attachments": {
+    "layer": "backend",
+    "why": "Upload acceptance and the membership and ban checks around it are enforced server-side on the multipart request."
+  },
+  "attachments/upload-by-paste": {
+    "layer": "frontend",
+    "why": "Reading an image off the clipboard and handing it to the uploader is composer behaviour; the server sees an ordinary upload."
+  },
+  "attachments/size-limits-by-kind": {
+    "layer": "backend",
+    "why": "The per-kind byte ceiling is refused by the server regardless of what the client allows through."
+  },
+  "attachments/attachment-metadata": {
+    "layer": "backend",
+    "why": "What is persisted alongside the bytes — original name, comment — is server state."
+  },
+  "attachments/attachment-metadata/metadata-display": {
+    "layer": "frontend",
+    "why": "How name, size, and kind are laid out in the message row is rendering."
+  },
+  "attachments/attachment-metadata/voice-message-metadata-display": {
+    "layer": "frontend",
+    "why": "Duration and the voice-message treatment in the message row are rendering."
+  },
+  "attachments/inline-image-rendering": {
+    "layer": "frontend",
+    "why": "Whether an attachment renders as a preview, a fallback, or a file chip is decided in the component."
+  },
+  "attachments/download-access-control": {
+    "layer": "backend",
+    "why": "Who may fetch the bytes is re-evaluated by the server on every download request."
+  },
+  "attachments/attachment-storage-and-persistence": {
+    "layer": "backend",
+    "why": "Where the bytes land under the uploads root, and that they outlive the requester's access, is server-side storage behaviour."
+  },
+  "attachments/voice-attachment-transcription": {
+    "layer": "backend",
+    "why": "Transcription is queued and persisted server-side; the outcome is observable on the attachment record."
+  },
+  "attachments/voice-attachment-transcription/transcript-shown-alongside-playback": {
+    "layer": "frontend",
+    "why": "Where the transcript appears relative to the player is rendering."
+  },
+  "attachments/transcription-eligibility-length-limit": {
+    "layer": "backend",
+    "why": "The server decides whether a clip is short enough to queue, and accepts the upload either way."
+  },
+  "attachments/recording-a-voice-message": {
+    "layer": "frontend",
+    "why": "Recording is a MediaRecorder interaction in the composer; only the resulting upload reaches the server."
+  },
+  "attachments/voice-attachment-playback": {
+    "layer": "frontend",
+    "why": "Playback and seeking are audio-element behaviour with no server involvement beyond the download."
+  },
+
+  "authentication/sign-in-with-email-and-password": {
+    "layer": "backend",
+    "why": "Credential verification and the response to repeated failures are decided by Identity on the server."
+  },
+  "authentication/bearer-token-authorization": {
+    "layer": "backend",
+    "why": "Whether an endpoint requires a token, and which is the public exception, is server-enforced."
+  },
+  "authentication/transparent-token-refresh": {
+    "layer": "frontend",
+    "why": "Detecting a 401, sharing one in-flight refresh, retrying, and clearing credentials on failure are all client responsibilities in apiFetch."
+  },
+  "authentication/persistent-login": {
+    "layer": "e2e",
+    "why": "Whether credentials survive closing the browser is only observable by actually closing and reopening one."
+  },
+  "authentication/persistent-login/no-idle-logout": {
+    "layer": "frontend",
+    "why": "The absence of an inactivity timer is a client property; the server never expires a session for idleness."
+  },
+  "authentication/sign-out-affects-only-the-current-browser": {
+    "layer": "backend",
+    "why": "That signing out revokes one session and leaves the account's other sessions usable is server state."
+  },
+  "authentication/password-change": {
+    "layer": "backend",
+    "why": "Current-password verification and the new password's policy are enforced by Identity."
+  },
+  "authentication/password-reset-by-email": {
+    "layer": "backend",
+    "why": "Issuing, accepting, and refusing a reset code is server-side."
+  },
+
+  "automated-testing/layered-verification": {
+    "layer": "tooling",
+    "why": "The test machinery is its own subject: satisfied by the layers existing and by this triage document."
+  },
+  "automated-testing/scenario-traceability": {
+    "layer": "tooling",
+    "why": "Verified by tools/spec-coverage's own behaviour on each run, not by an application test."
+  },
+  "automated-testing/code-coverage-gate": {
+    "layer": "tooling",
+    "why": "Verified by tools/coverage-gate's own behaviour, not by an application test."
+  },
+  "automated-testing/test-isolation": {
+    "layer": "tooling",
+    "why": "Verified by running the suite — repeated runs, single-test runs, an interrupted run, an absent database — not by a test inside it."
+  },
+  "automated-testing/running-the-suites": {
+    "layer": "tooling",
+    "why": "Verified by invoking test.bat and each layer's own command."
+  },
+
+  "chat-rooms/room-creation": {
+    "layer": "backend",
+    "why": "Creation and its required fields are validated server-side."
+  },
+  "chat-rooms/room-name-uniqueness": {
+    "layer": "backend",
+    "why": "Uniqueness — including whether a deleted room's name frees up — is a database-backed server rule."
+  },
+  "chat-rooms/room-properties": {
+    "layer": "backend",
+    "why": "Which room fields are returned, and to whom, is decided by the server."
+  },
+  "chat-rooms/public-room-catalog": {
+    "layer": "backend",
+    "why": "Catalog contents, search, and the exclusion of private rooms are query results the server produces."
+  },
+  "chat-rooms/joining-public-rooms": {
+    "layer": "backend",
+    "why": "Every join outcome — accepted, banned, already a member, private — is a server decision."
+  },
+  "chat-rooms/private-room-access": {
+    "layer": "backend",
+    "why": "Refusing a non-member's request for a private room is server-enforced."
+  },
+  "chat-rooms/private-room-access/private-rooms-screen": {
+    "layer": "frontend",
+    "why": "What the private rooms screen lists and how it is reached is a view concern."
+  },
+  "chat-rooms/leaving-rooms": {
+    "layer": "backend",
+    "why": "Whether a leave succeeds, and the owner's inability to leave, is enforced on the server."
+  },
+  "chat-rooms/leaving-rooms/leave-control-visibility": {
+    "layer": "frontend",
+    "why": "Whether the Leave control is offered is decided in the component before any call is made."
+  },
+  "chat-rooms/room-settings-maintenance": {
+    "layer": "backend",
+    "why": "Owner-only settings authority is re-checked on the update request."
+  },
+  "chat-rooms/room-deletion": {
+    "layer": "backend",
+    "why": "Deletion authority, and the room becoming unusable afterwards, is server state."
+  },
+  "chat-rooms/room-deletion/member-is-viewing-the-deleted-room": {
+    "layer": "e2e",
+    "why": "One user's deletion navigating another user's open browser away is only demonstrable with two live sessions."
+  },
+
+  "chat-ui-shell/application-layout": {
+    "layer": "frontend",
+    "why": "Which regions the shell renders for a room versus a direct chat is pure composition."
+  },
+  "chat-ui-shell/top-navigation": {
+    "layer": "frontend",
+    "why": "Navigation targets and the account menu are client routing and rendering."
+  },
+  "chat-ui-shell/top-navigation/signing-out-from-the-menu": {
+    "layer": "e2e",
+    "why": "Sign-out from the menu returning the browser to the sign-in screen spans the whole stack."
+  },
+  "chat-ui-shell/sidebar-with-accordion-sections": {
+    "layer": "frontend",
+    "why": "Accordion compaction and expansion is component state."
+  },
+  "chat-ui-shell/members-and-context-panel": {
+    "layer": "frontend",
+    "why": "What the panel shows and which actions it offers is rendering; the server re-checks the actions themselves under room-moderation."
+  },
+  "chat-ui-shell/message-list-scrolling-behavior": {
+    "layer": "frontend",
+    "why": "Stick-to-bottom, preserved position, and load-on-reaching-top are all list behaviour."
+  },
+  "chat-ui-shell/message-composition-controls": {
+    "layer": "frontend",
+    "why": "Key handling, emoji insertion, and draft retention happen before anything is sent."
+  },
+  "chat-ui-shell/message-row-affordances": {
+    "layer": "frontend",
+    "why": "Which controls a row offers, and inline edit, are rendering; the authority behind them is covered under messaging."
+  },
+  "chat-ui-shell/administration-through-modal-dialogs": {
+    "layer": "frontend",
+    "why": "Dialog structure, member filtering, and destructive-action confirmation are view behaviour."
+  },
+  "chat-ui-shell/unauthenticated-access-and-routing": {
+    "layer": "frontend",
+    "why": "Route guarding and the root redirect are decided by the router before any request is made; the API's own refusal is covered by authentication/bearer-token-authorization."
+  },
+  "chat-ui-shell/loading-and-error-feedback": {
+    "layer": "frontend",
+    "why": "Skeletons, error toasts, and the missing-room state are rendering of states the server merely reports."
+  },
+
+  "contacts-and-blocking/personal-contact-list": {
+    "layer": "backend",
+    "why": "What the contacts endpoint returns, and that outgoing requests are not among them, is server state."
+  },
+  "contacts-and-blocking/sending-a-friend-request": {
+    "layer": "backend",
+    "why": "Target resolution and every refusal — unknown, duplicate, self — is decided on the server."
+  },
+  "contacts-and-blocking/confirming-friendship": {
+    "layer": "backend",
+    "why": "Who may accept or reject a request is server-enforced."
+  },
+  "contacts-and-blocking/removing-a-contact": {
+    "layer": "backend",
+    "why": "Removal is persisted and symmetric; the server owns it."
+  },
+  "contacts-and-blocking/blocking-a-user": {
+    "layer": "backend",
+    "why": "The block and its consequences for writing and reading are enforced on every subsequent request."
+  },
+  "contacts-and-blocking/unblocking": {
+    "layer": "backend",
+    "why": "Unblocking and the no-op case are server state transitions."
+  },
+
+  "direct-messages/direct-chats-are-two-participant-chats": {
+    "layer": "backend",
+    "why": "That a direct chat supports the same operations as a room, and never appears in the catalog, is observable on the API."
+  },
+  "direct-messages/direct-chats-are-two-participant-chats/no-moderation-roles": {
+    "layer": "frontend",
+    "why": "Whether role and management affordances are offered for a direct chat is rendering."
+  },
+  "direct-messages/opening-a-direct-chat-requires-friendship": {
+    "layer": "backend",
+    "why": "The friendship precondition, reopening rather than duplicating, and every refusal are server decisions."
+  },
+  "direct-messages/frozen-direct-chats": {
+    "layer": "backend",
+    "why": "Freezing on block, allowing reads, and thawing on unblock are enforced per request."
+  },
+  "direct-messages/direct-chats-in-the-sidebar": {
+    "layer": "backend",
+    "why": "That a user's direct chats are returned alongside their rooms is a server listing."
+  },
+
+  "messaging/sending-messages": {
+    "layer": "backend",
+    "why": "Membership and ban checks on send, and the exact text stored, are server-side."
+  },
+  "messaging/message-size-limit": {
+    "layer": "backend",
+    "why": "The length ceiling is refused by the server."
+  },
+  "messaging/message-size-limit/client-side-warning": {
+    "layer": "frontend",
+    "why": "The counter and the disabled send button appear before anything is sent."
+  },
+  "messaging/replies": {
+    "layer": "backend",
+    "why": "Which reply targets are accepted, and what a reply carries, is validated and persisted server-side."
+  },
+  "messaging/replies/cancelling-a-reply": {
+    "layer": "frontend",
+    "why": "Dismissing the reply banner is composer state."
+  },
+  "messaging/editing-messages": {
+    "layer": "backend",
+    "why": "Edit authority and the refusal to edit a deleted message are enforced on the server."
+  },
+  "messaging/deleting-messages": {
+    "layer": "backend",
+    "why": "Author and admin delete authority, and the idempotence of a second delete, are server rules."
+  },
+  "messaging/persistent-history-in-chronological-order": {
+    "layer": "backend",
+    "why": "Ordering, durability, and what an absent recipient sees on their next read are database-backed."
+  },
+  "messaging/incremental-history-loading": {
+    "layer": "backend",
+    "why": "Paging by cursor and signalling the beginning of history are server query behaviour."
+  },
+  "messaging/incremental-history-loading/large-history-remains-usable": {
+    "layer": "load",
+    "why": "A 10,000-message room staying responsive is a capacity property, and the load layer is not built."
+  },
+  "messaging/history-access-control": {
+    "layer": "backend",
+    "why": "Refusing a non-member's history request is server-enforced."
+  },
+
+  "platform-constraints/capacity": {
+    "layer": "load",
+    "why": "300 concurrent users and a 1000-member room are capacity claims; the load layer is specified but not built."
+  },
+  "platform-constraints/performance-targets": {
+    "layer": "load",
+    "why": "Behaviour at 10,000 messages is a capacity claim; the load layer is not built."
+  },
+  "platform-constraints/durable-persistence": {
+    "layer": "backend",
+    "why": "Surviving a host restart, and migrations running on startup, are observable by restarting the application the tests host."
+  },
+  "platform-constraints/file-storage": {
+    "layer": "backend",
+    "why": "That content is written beneath the configured root, and served from there, is checkable on disk after an upload."
+  },
+  "platform-constraints/consistency-of-access-decisions": {
+    "layer": "backend",
+    "why": "That a ban or a promotion binds on the very next call is precisely a server-side, per-request evaluation."
+  },
+  "platform-constraints/client-server-transport-boundary": {
+    "layer": "e2e",
+    "why": "Whether the browser only ever calls relative paths through its own proxy is visible only from the browser."
+  },
+  "platform-constraints/deployment-topology": {
+    "layer": "e2e",
+    "why": "Which services are published and which are internal is a property of the running compose stack."
+  },
+
+  "realtime-delivery/single-authenticated-realtime-connection": {
+    "layer": "backend",
+    "why": "Whether the hub accepts a connection, and on what credential, is server-enforced."
+  },
+  "realtime-delivery/single-authenticated-realtime-connection/sign-out": {
+    "layer": "frontend",
+    "why": "Stopping the connection on sign-out is the client's side of the lifecycle."
+  },
+  "realtime-delivery/automatic-reconnection": {
+    "layer": "frontend",
+    "why": "The retry schedule after a dropped connection is client policy."
+  },
+  "realtime-delivery/automatic-reconnection/presence-after-reconnect": {
+    "layer": "e2e",
+    "why": "Presence converging again after a real network interruption needs the assembled stack."
+  },
+  "realtime-delivery/recipient-scoping": {
+    "layer": "backend",
+    "why": "Which connections a server-pushed event reaches is exactly what the hub's group enrolment decides."
+  },
+  "realtime-delivery/pushed-event-kinds": {
+    "layer": "frontend",
+    "why": "The scenarios are about applying an arriving event to the open view; that the server emits it is covered by recipient-scoping."
+  },
+  "realtime-delivery/pushed-event-kinds/room-deletion-while-viewing": {
+    "layer": "e2e",
+    "why": "Being navigated out of a room another user deleted is a whole-stack flow."
+  },
+  "realtime-delivery/delivery-latency": {
+    "layer": "backend",
+    "why": "The three-second budget from accepted send to a second client's receipt is measurable with two hub clients."
+  },
+  "realtime-delivery/duplicate-suppression": {
+    "layer": "frontend",
+    "why": "Reconciling the local insert against the echoed event by id happens in the client cache."
+  },
+  "realtime-delivery/operation-failures-surface-as-errors": {
+    "layer": "backend",
+    "why": "That a refused hub invocation returns an error carrying the reason is the server's contract."
+  },
+
+  "room-moderation/room-roles": {
+    "layer": "backend",
+    "why": "That the owner's authority cannot be taken away is enforced on every moderation call."
+  },
+  "room-moderation/room-roles/role-display": {
+    "layer": "frontend",
+    "why": "How owner and admin are labelled in the member list is rendering."
+  },
+  "room-moderation/moderation-requires-admin-authority": {
+    "layer": "backend",
+    "why": "Refusing a member's or an outsider's moderation call is the definition of a server-enforced rule."
+  },
+  "room-moderation/managing-admins": {
+    "layer": "backend",
+    "why": "Promotion, demotion, and their edge cases are persisted role changes."
+  },
+  "room-moderation/removal-is-a-ban": {
+    "layer": "backend",
+    "why": "That removal also bans, and what that means for a rejoin attempt, is server state."
+  },
+  "room-moderation/banning-users": {
+    "layer": "backend",
+    "why": "Ban authority, the recorded reason, and the repeat case are server decisions."
+  },
+  "room-moderation/ban-list-visibility-and-unbanning": {
+    "layer": "backend",
+    "why": "Who may read the ban list, and the effect of unbanning, is server-enforced."
+  },
+  "room-moderation/loss-of-room-access": {
+    "layer": "backend",
+    "why": "Refusing history and attachment downloads to a removed user is re-evaluated per request."
+  },
+  "room-moderation/room-invitations": {
+    "layer": "backend",
+    "why": "Who may invite whom, and the duplicate and banned cases, is decided on the server."
+  },
+  "room-moderation/responding-to-invitations": {
+    "layer": "backend",
+    "why": "Who may answer an invitation, and what each answer does, is server state."
+  },
+
+  "speech-to-text/transcribing-an-audio-clip": {
+    "layer": "backend",
+    "why": "The transcription endpoint's authorization and its handling of bad audio and an unavailable service are server behaviour."
+  },
+  "speech-to-text/dictate-into-the-composer": {
+    "layer": "frontend",
+    "why": "Recording, inserting the result at the caret, and handling a denied microphone are composer behaviour."
+  },
+  "speech-to-text/dictation-length-limit": {
+    "layer": "frontend",
+    "why": "Stopping the recorder at the limit is client-side."
+  },
+  "speech-to-text/dictation-length-limit/oversized-clip-submitted-directly": {
+    "layer": "backend",
+    "why": "A client that ignores the limit is refused by the server."
+  },
+
+  "unread-notifications/unread-indicators": {
+    "layer": "frontend",
+    "why": "Whether a badge is raised, and the aggregate shown, is client state; the server does not know which chat is open."
+  },
+  "unread-notifications/unread-indicators/message-arrives-in-a-background-chat": {
+    "layer": "backend",
+    "why": "The unread count itself is incremented and pushed by the server."
+  },
+  "unread-notifications/clearing-unread-state": {
+    "layer": "backend",
+    "why": "The read position is persisted against the membership and clears the server-side count."
+  },
+  "unread-notifications/clearing-unread-state/real-time-channel-unavailable": {
+    "layer": "frontend",
+    "why": "Choosing the HTTP fallback when the hub is down is a client decision."
+  },
+  "unread-notifications/typing-indicators": {
+    "layer": "backend",
+    "why": "Who receives a typing notice, and that the composer does not receive their own, is the hub's fan-out."
+  },
+  "unread-notifications/friend-request-notification": {
+    "layer": "backend",
+    "why": "The push to the recipient's personal group is server-side; the list refresh it triggers is covered under contacts."
+  },
+  "unread-notifications/invitation-visibility": {
+    "layer": "frontend",
+    "why": "The sidebar section, its count, and its refresh interval are view behaviour over an endpoint covered by room-moderation."
+  },
+
+  "user-accounts/self-registration": {
+    "layer": "backend",
+    "why": "Registration and its required fields are validated by Identity."
+  },
+  "user-accounts/email-and-username-uniqueness": {
+    "layer": "backend",
+    "why": "Uniqueness is a database-backed server rule."
+  },
+  "user-accounts/username-format-and-immutability": {
+    "layer": "backend",
+    "why": "The accepted character set, the email-shaped rejection, and the absence of a rename endpoint are all server-side."
+  },
+  "user-accounts/display-name": {
+    "layer": "backend",
+    "why": "The stored display name, and what is returned when there is none, is server state."
+  },
+  "user-accounts/own-profile-retrieval": {
+    "layer": "backend",
+    "why": "What the profile endpoint returns, and its refusal without a token, is server behaviour."
+  },
+  "user-accounts/account-deletion": {
+    "layer": "backend",
+    "why": "Deletion and the state of a second attempt are server-side."
+  },
+
+  "user-presence/presence-states": {
+    "layer": "backend",
+    "why": "The server classifies each user into exactly one of the three states and answers lookups with it."
+  },
+  "user-presence/activity-heartbeat-and-idle-threshold": {
+    "layer": "backend",
+    "why": "The 60-second window is applied by the server to the heartbeats it receives."
+  },
+  "user-presence/activity-heartbeat-and-idle-threshold/hidden-tab": {
+    "layer": "frontend",
+    "why": "Deciding to report inactive because the tab is hidden happens in the client before the heartbeat."
+  },
+  "user-presence/multi-tab-presence": {
+    "layer": "backend",
+    "why": "That a user stays online while any connection remains, and goes offline when the last one ends, is the server's aggregation."
+  },
+  "user-presence/multi-tab-presence/leader-tab-closes": {
+    "layer": "frontend",
+    "why": "Heartbeat leadership and its transfer between tabs is entirely client-side."
+  },
+  "user-presence/presence-change-broadcast": {
+    "layer": "backend",
+    "why": "Pushing a transition to observing connections on connect and disconnect is the hub's job."
+  },
+  "user-presence/presence-lookup-on-demand": {
+    "layer": "backend",
+    "why": "The bulk lookup is a hub invocation answered from server state."
+  },
+  "user-presence/presence-indicators-in-the-ui": {
+    "layer": "frontend",
+    "why": "How a state — including an unknown one — is drawn next to a name is rendering."
+  },
+
+  "user-sessions/session-registration-per-browser": {
+    "layer": "frontend",
+    "why": "Already covered. Registering on a restored login, and tolerating a failed registration, are client responsibilities."
+  },
+  "user-sessions/session-registration-per-browser/new-sign-in-registers-a-session": {
+    "layer": "backend",
+    "why": "Already covered at the backend layer."
+  },
+  "user-sessions/listing-active-sessions": {
+    "layer": "backend",
+    "why": "Already covered at the backend layer."
+  },
+  "user-sessions/revoking-sessions": {
+    "layer": "backend",
+    "why": "Already covered at the backend layer."
+  },
+  "user-sessions/revoking-sessions/revoking-the-current-session": {
+    "layer": "e2e",
+    "why": "Already covered end-to-end: revoking the session the browser is using returns it to sign-in."
+  }
+}

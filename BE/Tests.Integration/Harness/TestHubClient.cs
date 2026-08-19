@@ -89,6 +89,16 @@ public sealed class TestHubClient : IAsyncDisposable
         foreach (var eventName in subscribeTo ?? ChatHubEvents.All) client.Subscribe(eventName);
 
         await client.Connection.StartAsync(cancellationToken);
+
+        // StartAsync returns once the handshake is done, which is *before* the server has finished
+        // OnConnectedAsync — and that is where the connection is enrolled in its user and room
+        // groups, behind a database query. A test that pushed an event in that window would find it
+        // delivered to nobody. SignalR does not dispatch a connection's messages until its
+        // OnConnectedAsync has completed, so one round trip on this connection is proof that
+        // enrolment is done. GetPresenceFor with no ids answers immediately and touches nothing.
+        await client.InvokeAsync<Dictionary<string, string>>(
+            "GetPresenceFor", (object)Array.Empty<string>());
+
         return client;
     }
 
@@ -103,14 +113,15 @@ public sealed class TestHubClient : IAsyncDisposable
 
         _subscriptions.Add(Connection.On<JsonElement>(eventName, payload =>
         {
-            if (_waiters[eventName].TryDequeue(out var waiter))
+            // An expectation that timed out cancels its own waiter, so skip past any such waiter:
+            // handing this occurrence to a claim nobody is awaiting any more would lose it, and the
+            // test that made the next claim would then time out too.
+            while (_waiters[eventName].TryDequeue(out var waiter))
             {
-                waiter.TrySetResult(payload);
+                if (waiter.TrySetResult(payload)) return;
             }
-            else
-            {
-                _received[eventName].Enqueue(payload);
-            }
+
+            _received[eventName].Enqueue(payload);
         }));
     }
 
@@ -129,7 +140,7 @@ public sealed class TestHubClient : IAsyncDisposable
 
         var source = new TaskCompletionSource<JsonElement>(TaskCreationOptions.RunContinuationsAsynchronously);
         _waiters[eventName].Enqueue(source);
-        return new EventExpectation<T>(eventName, source.Task, timeout ?? DefaultTimeout);
+        return new EventExpectation<T>(eventName, source.Task, timeout ?? DefaultTimeout, source);
     }
 
     /// <summary>
@@ -160,7 +171,11 @@ public sealed class TestHubClient : IAsyncDisposable
 }
 
 /// <summary>A claim on one future hub event, awaited after the action that triggers it.</summary>
-public sealed class EventExpectation<T>(string eventName, Task<JsonElement> payload, TimeSpan timeout)
+public sealed class EventExpectation<T>(
+    string eventName,
+    Task<JsonElement> payload,
+    TimeSpan timeout,
+    TaskCompletionSource<JsonElement>? waiter = null)
 {
     /// <summary>The raw payload, so a test can assert on fields without a DTO type.</summary>
     public async Task<JsonElement> RawAsync()
@@ -173,6 +188,7 @@ public sealed class EventExpectation<T>(string eventName, Task<JsonElement> payl
         }
         catch (TimeoutException)
         {
+            Abandon();
             throw new TimeoutException(
                 $"Hub event '{eventName}' did not arrive within {timeout.TotalSeconds:0.#}s.");
         }
@@ -195,9 +211,16 @@ public sealed class EventExpectation<T>(string eventName, Task<JsonElement> payl
         }
         catch (TimeoutException)
         {
+            Abandon();
             return true;
         }
     }
+
+    /// <summary>
+    /// Gives up this claim. Cancelling the waiter is what lets the dispatcher recognise it as
+    /// abandoned and pass the next occurrence to whoever claimed it afterwards.
+    /// </summary>
+    private void Abandon() => waiter?.TrySetCanceled();
 
     private static readonly JsonSerializerOptions JsonOptions =
         new(JsonSerializerDefaults.Web);
@@ -220,10 +243,12 @@ public static class ChatHubEvents
     public const string UnreadUpdated = "UnreadUpdated";
     public const string UserTyping = "UserTyping";
     public const string UserStoppedTyping = "UserStoppedTyping";
+    public const string AttachmentTranscribed = "AttachmentTranscribed";
 
     public static readonly string[] All =
     [
         MessageReceived, MessageEdited, MessageDeleted, PresenceChanged, RoomMembershipChanged,
         RoomDeleted, FriendRequestReceived, UnreadUpdated, UserTyping, UserStoppedTyping,
+        AttachmentTranscribed,
     ];
 }

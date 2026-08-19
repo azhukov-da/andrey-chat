@@ -15,7 +15,11 @@ namespace Tests.Integration.Harness;
 /// two constants is itself constant, so the marker and the description compose. A test covering
 /// several scenarios concatenates several markers.
 /// </remarks>
-[Collection(ChatAppCollection.Name)]
+/// <remarks>
+/// The collection is declared on each concrete test class rather than here, so a capability can
+/// pick the group it runs in — see <see cref="Collections"/>. A base class carrying the attribute
+/// would pin every derived class to one database and one host, and with it to one thread.
+/// </remarks>
 public abstract class IntegrationTest(ChatAppFixture fixture) : IAsyncLifetime
 {
     protected ChatAppFixture Fixture { get; } = fixture;

@@ -1,0 +1,9 @@
+{
+  "name": "layer-triage",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Renders docs/test-layer-triage.md: which test layer owns which specified scenario.",
+  "main": "index.mjs",
+  "bin": { "layer-triage": "index.mjs" }
+}

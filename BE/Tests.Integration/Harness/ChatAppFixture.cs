@@ -54,6 +54,11 @@ public class ChatAppFixture : IAsyncLifetime
         await using var connection = new NpgsqlConnection(_database.ConnectionString);
         await connection.OpenAsync();
         await _respawner.ResetAsync(connection);
+
+        // The substituted seams are singletons, so they outlive a test the way the host does.
+        // Their scripted answers and recorded calls are test data and go with the rest of it.
+        App.Transcription.Reset();
+        App.TranscriptionQueue.Reset();
     }
 
     public async ValueTask DisposeAsync()

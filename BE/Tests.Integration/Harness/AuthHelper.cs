@@ -28,8 +28,19 @@ public static class AuthHelper
     /// False to get a signed-in user with no session at all — needed to test the behaviour of
     /// requests that arrive without an <c>X-Session-Id</c> header.
     /// </param>
-    public static async Task<TestUser> CreateUserAsync(
+    public static Task<TestUser> CreateUserAsync(
         ChatAppFixture fixture,
+        string? deviceInfo = "Integration test device",
+        string? userAgent = "IntegrationTests/1.0",
+        bool registerSession = true) =>
+        CreateUserAsync(fixture.App, deviceInfo, userAgent, registerSession);
+
+    /// <summary>
+    /// As above, against a host given directly rather than through a collection's fixture — for the
+    /// tests that build a second host, such as the restart and startup-migration ones.
+    /// </summary>
+    public static async Task<TestUser> CreateUserAsync(
+        ChatAppFactory app,
         string? deviceInfo = "Integration test device",
         string? userAgent = "IntegrationTests/1.0",
         bool registerSession = true)
@@ -38,7 +49,7 @@ public static class AuthHelper
         var email = $"user-{suffix}@example.test";
         var username = $"user{suffix}";
 
-        var client = fixture.App.CreateClient();
+        var client = app.CreateClient();
         if (userAgent is not null) client.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
 
         var registration = await client.PostAsJsonAsync(
@@ -57,7 +68,7 @@ public static class AuthHelper
             client.DefaultRequestHeaders.Add("X-Session-Id", sessionId.Value.ToString());
         }
 
-        var userId = await ResolveUserIdAsync(fixture, email);
+        var userId = await ResolveUserIdAsync(app, email);
 
         return new TestUser(userId, email, username, DefaultPassword, tokens.AccessToken,
             tokens.RefreshToken, sessionId, client);
@@ -67,13 +78,24 @@ public static class AuthHelper
     /// Signs the same account in again on a fresh client, as a second browser would. The returned
     /// user shares the account but has its own token and its own session.
     /// </summary>
-    public static async Task<TestUser> SignInAgainAsync(
+    public static Task<TestUser> SignInAgainAsync(
         ChatAppFixture fixture,
+        TestUser user,
+        string? deviceInfo = "Second integration test device",
+        string? userAgent = "IntegrationTests-Second/1.0") =>
+        SignInAgainAsync(fixture.App, user, deviceInfo, userAgent);
+
+    /// <summary>
+    /// As above, against a host given directly. Signing the same account in through a second host is
+    /// how a restart test reaches its data over HTTP rather than through the database.
+    /// </summary>
+    public static async Task<TestUser> SignInAgainAsync(
+        ChatAppFactory app,
         TestUser user,
         string? deviceInfo = "Second integration test device",
         string? userAgent = "IntegrationTests-Second/1.0")
     {
-        var client = fixture.App.CreateClient();
+        var client = app.CreateClient();
         if (userAgent is not null) client.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
 
         var tokens = await SignInAsync(client, user.Email, user.Password);
@@ -112,8 +134,8 @@ public static class AuthHelper
         return tokens;
     }
 
-    private static async Task<string> ResolveUserIdAsync(ChatAppFixture fixture, string email) =>
-        await fixture.App.WithScopeAsync(async services =>
+    private static async Task<string> ResolveUserIdAsync(ChatAppFactory app, string email) =>
+        await app.WithScopeAsync(async services =>
         {
             var users = services.GetRequiredService<UserManager<ApplicationUser>>();
             var user = await users.FindByEmailAsync(email)

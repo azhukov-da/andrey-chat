@@ -85,8 +85,41 @@ through `App.Server.SendAsync` (see `UserSessions/SessionsTests.cs`).
 `public partial class Program` marker the factory needs, and an exception filter on the catch-all so
 the host-shutdown signal the factory uses is not swallowed.
 
-Coverage exclusions are declared in [coverlet.runsettings](coverlet.runsettings). Scenario claim
-syntax is in [docs/testing-conventions.md](../docs/testing-conventions.md).
+### Test runner
+
+The suite runs on **Microsoft.Testing.Platform**, not VSTest. This is not a preference: the .NET 10
+SDK refuses to run a platform test project through the VSTest target at all, and xunit.v3 is a
+platform test project. Two things select it, and both are load-bearing:
+
+- the repo-root [global.json](../global.json) — `"test": { "runner": "Microsoft.Testing.Platform" }`
+- `UseMicrosoftTestingPlatformRunner` / `TestingPlatformDotnetTestSupport` in the csproj
+
+`dotnet test BE/Tests.Integration/Tests.Integration.csproj` works as-is for a plain run. Reporting
+arguments go after a bare `--`, because everything past it is handed to the platform rather than to
+the SDK — see [test.bat](../test.bat) for the invocation that produces the trx and the cobertura the
+two gate tools read.
+
+### Coverage exclusions
+
+Declared in [codecoverage.runsettings](codecoverage.runsettings), passed as `--coverage-settings`
+with an **absolute** path (the test executable runs from its own output directory). It replaced
+`coverlet.runsettings`, whose XPlat collector is a VSTest data collector and therefore unreachable
+from the platform. The exclusions are the same set, expressed as regular expressions rather than
+assembly filters and file globs:
+
+| Exclusion | Why |
+|---|---|
+| `Tests.Integration`, `Tests.Load`, xunit, the platform, FluentAssertions, Respawn | Test scaffolding, not the system under test |
+| `**/Migrations/**`, `*.Designer.cs`, `*.g.cs`, `*.generated.cs` | Generated code |
+| `get_*` / `set_*` functions | Property accessors are data carriers with nothing to verify — coverlet's `SkipAutoProps` has no direct equivalent here |
+| `ExcludeFromCodeCoverage`, `CompilerGenerated`, `GeneratedCode`, `Obsolete` | Marked as not-under-test at the source |
+
+That table lives here rather than in the file itself because the settings parser rejects a file
+containing XML comments, with the unhelpful message `Provided settings file doesn't exist or is
+invalid`. It is equally strict about PascalCase element names and `True`/`False` casing.
+
+Scenario claim syntax is in [docs/testing-conventions.md](../docs/testing-conventions.md); which
+layer owns which scenario is in [docs/test-layer-triage.md](../docs/test-layer-triage.md).
 
 ## Adding a feature
 

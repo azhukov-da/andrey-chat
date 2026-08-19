@@ -3,6 +3,7 @@ using Infrastructure.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 
 namespace Tests.Integration.Harness;
@@ -38,6 +39,15 @@ public sealed class ChatAppFactory : WebApplicationFactory<Program>
 
     /// <summary>Uploads written by tests land here rather than in the app's configured root.</summary>
     public string UploadsRoot => _uploadsRoot;
+
+    /// <summary>
+    /// The transcription seam standing in for the external model server. Script its answer in a
+    /// test's arrange step; see <see cref="FakeTranscriptionService"/>.
+    /// </summary>
+    public FakeTranscriptionService Transcription { get; } = new();
+
+    /// <summary>The application's transcription queue, with the enqueued jobs recorded.</summary>
+    public RecordingTranscriptionJobQueue TranscriptionQueue { get; } = new();
 
     public static async Task<ChatAppFactory> CreateAsync(string connectionString)
     {
@@ -80,12 +90,32 @@ public sealed class ChatAppFactory : WebApplicationFactory<Program>
         builder.UseSetting($"ConnectionStrings:DefaultConnection", _connectionString);
         builder.UseSetting("Uploads:Root", _uploadsRoot);
 
+        // Serilog reads its level from configuration, and the application writes a line per request
+        // to the console. Across a suite this many tests wide that buries the assertion message
+        // that actually explains a failure, so the floor is raised to Warning. Set
+        // TEST_APP_LOG_LEVEL=Information to get the request log back while diagnosing one.
+        var logLevel = Environment.GetEnvironmentVariable("TEST_APP_LOG_LEVEL") ?? "Warning";
+        builder.UseSetting("Serilog:MinimumLevel:Default", logLevel);
+        builder.UseSetting("Serilog:MinimumLevel:Override:Microsoft", logLevel);
+        builder.UseSetting("Serilog:MinimumLevel:Override:System", logLevel);
+
         builder.ConfigureServices(services =>
         {
             // Belt and braces for the eager-configuration problem described on BuildGate: if the
             // registration ever stops depending on the environment variable, this still wins
             // because ConfigureServices runs after every registration Program.cs makes.
             services.AddSingleton<IFileStorage>(new LocalFileStorage(_uploadsRoot));
+
+            // The transcription seam. The real service posts audio to a faster-whisper server, so
+            // leaving it registered would make the suite depend on something hosted — and on a run
+            // where that server happened to be up, on what a model returned. Replacing the
+            // interface rather than the pipeline keeps the controller, the storage, the queue, and
+            // the application's own TranscriptionBackgroundService in the path exactly as they ship.
+            services.RemoveAll<ITranscriptionService>();
+            services.AddSingleton<ITranscriptionService>(Transcription);
+
+            services.RemoveAll<ITranscriptionJobQueue>();
+            services.AddSingleton<ITranscriptionJobQueue>(TranscriptionQueue);
         });
     }
 

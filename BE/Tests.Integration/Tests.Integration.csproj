@@ -5,11 +5,13 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
-    <!-- Run through VSTest so the trx logger and coverlet's XPlat Code Coverage
-         collector are both available; tools/spec-coverage reads the .trx and
-         tools/coverage-gate reads the coverlet output. -->
-    <UseMicrosoftTestingPlatformRunner>false</UseMicrosoftTestingPlatformRunner>
-    <TestingPlatformDotnetTestSupport>false</TestingPlatformDotnetTestSupport>
+    <!-- Run through Microsoft.Testing.Platform. VSTest is not an option: the .NET 10 SDK refuses
+         it for a platform test project outright ("Testing with VSTest target is no longer
+         supported"). The trx tools/spec-coverage parses and the cobertura tools/coverage-gate
+         measures now come from the two Microsoft.Testing.Extensions packages below, and the
+         runner itself is selected in the repo-root global.json. -->
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,10 +25,11 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="coverlet.collector" Version="10.0.1">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <!-- Microsoft.Testing.Platform extensions: the trx report tools/spec-coverage parses and the
+         cobertura coverage tools/coverage-gate measures. Under VSTest these came from the SDK's
+         logger and coverlet.collector; the platform needs them referenced explicitly. -->
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" Version="2.3.3" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.9.0" />
 
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.11" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.11" />
