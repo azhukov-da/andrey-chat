@@ -2,3 +2,14 @@
 /.tmp
 /.claude/worktrees
 /analyzer/.claude/worktrees
+
+# Generated test reports. Everything under docs/test-coverage/ is produced by test.bat;
+# only the scenario summary is committed, because it is the one artefact worth reviewing
+# in a diff — it shows which specified scenarios gained or lost a test.
+/docs/test-coverage/*
+!/docs/test-coverage/scenarios.md
+
+# Per-run test output
+**/TestResults/
+/FE/test-results/
+/FE/playwright-report/

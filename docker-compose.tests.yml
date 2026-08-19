@@ -1,0 +1,17 @@
+# Test-only overlay. Publishes the PostgreSQL port on the host so backend
+# integration tests, which run in the test process rather than in a container,
+# can create and drop their own `chat_test_*` databases.
+#
+# This is deliberately NOT part of docker-compose.yml: the platform-constraints
+# spec ("Bringing the stack up") requires the database to be unreachable from
+# outside the internal network in the deployed topology. Keeping the port here
+# means `docker compose up` and `start.bat` stay spec-compliant, and the port
+# exists only when a developer opts in:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.tests.yml up -d db
+#
+# 55432 rather than 5432 so it cannot collide with a locally installed PostgreSQL.
+services:
+  db:
+    ports:
+      - "55432:5432"

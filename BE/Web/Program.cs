@@ -102,7 +102,12 @@ try
 
     app.Run();
 }
-catch (Exception ex)
+// The exception filter lets the host-shutdown signals used by tooling escape this
+// catch-all. WebApplicationFactory (BE/Tests.Integration) starts the host by running
+// this entry point and aborts it with StopTheHostException once the IHost is built;
+// swallowing that here would make the factory report that no host was ever created.
+// HostAbortedException is the same story for `dotnet ef` design-time commands.
+catch (Exception ex) when (ex.GetType().Name is not ("StopTheHostException" or "HostAbortedException"))
 {
     Log.Fatal(ex, "Application terminated unexpectedly");
 }
@@ -110,3 +115,9 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+// Test-only marker: WebApplicationFactory<TEntryPoint> needs an accessible entry-point
+// type, and top-level statements generate an internal `Program`. Declaring it public and
+// partial here adds no runtime behaviour but makes the web host addressable from
+// BE/Tests.Integration. Do not remove as dead code — the integration suite will not compile.
+public partial class Program;

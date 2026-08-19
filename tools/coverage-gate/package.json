@@ -1,0 +1,9 @@
+{
+  "name": "coverage-gate",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Evaluates the 80% line-coverage gate for the backend and frontend layers.",
+  "main": "index.mjs",
+  "bin": { "coverage-gate": "index.mjs" }
+}

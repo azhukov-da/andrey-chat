@@ -55,8 +55,47 @@ When a server event needs to update the UI:
 
 - `npm run dev` — Vite dev server, proxies to BE at `https://localhost:7071`.
 - `npm run build` — `tsc -b && vite build`.
-- `npm test` / `npm run test:watch` — vitest.
-- MSW is available (`msw` dev dep) for API mocks in tests.
+- `npm test` / `npm run test:watch` — vitest unit and component tests.
+- `npm run test:coverage` — same, with v8 line coverage into `docs/test-coverage/frontend/`.
+- `npm run e2e` / `npm run e2e:ui` — Playwright end-to-end tests against the running stack.
+
+## Tests
+
+Two of the project's three test layers live here. See the
+[root CLAUDE.md](../CLAUDE.md#automated-tests) for how they fit together and
+[docs/testing-conventions.md](../docs/testing-conventions.md) for how a test declares which
+specified scenario it verifies.
+
+### Unit and component (`src/**/*.test.tsx`)
+
+jsdom + Testing Library + MSW. Needs nothing running. Configured in the `test` block of
+[vite.config.ts](vite.config.ts); the harness is [src/test/](src/test/):
+
+- [setup.ts](src/test/setup.ts) — starts MSW and, after every test, unmounts, resets handlers, resets every Zustand store to its captured initial state, clears both storages, and resets the fake hub. Nothing leaks between tests.
+- [msw/handlers.ts](src/test/msw/handlers.ts) — a boring default for every endpoint `src/api/*` calls. Override one per test with `server.use(...)`. An endpoint with no handler **fails** the test naming the URL, rather than attempting a real request.
+- [renderWithProviders.tsx](src/test/renderWithProviders.tsx) — a fresh `QueryClient` (no retries, no caching) plus a memory router, with the auth store seeded signed-in by default.
+- [fakeHub.ts](src/test/fakeHub.ts) / [fakeHubClient.ts](src/test/fakeHubClient.ts) — a stand-in for the SignalR connection. Install it with `vi.mock('@/realtime/hubClient', () => import('@/test/fakeHubClient'))`, then drive any server push with `fakeHub.emit('MessageReceived', payload)` and assert on `fakeHub.invocationsOf('Ping')`.
+- [specTest.ts](src/test/specTest.ts) — declares the scenario a test verifies.
+
+Coverage exclusions are declared in `vite.config.ts`. There is deliberately no vitest `thresholds`
+entry — the 80% gate is evaluated by `tools/coverage-gate` instead, so a coverage shortfall cannot
+mask a real test failure.
+
+### End-to-end ([e2e/](e2e/))
+
+Playwright against `http://localhost:3000`, so the real `nginx.conf` proxy configuration is part of
+what is under test. The suite launches nothing; [e2e/global-setup.ts](e2e/global-setup.ts) fails with
+"run start.bat first" when the stack is down.
+
+[e2e/fixtures.ts](e2e/fixtures.ts) gives `signedIn` (one signed-in browser context) and `twoUsers`
+(two independent contexts on two accounts), each registering a fresh account with a generated
+identifier. Nothing is cleaned up — this layer runs against the developer's own stack and adds real
+data to the development database, by design.
+
+Two things to know about the fixtures, both working around real defects rather than test quirks:
+
+- `/login` and `/register` are proxied to the backend by nginx, so `page.goto('/login')` gets a 405. The fixtures reach those screens by loading `/` and letting the SPA route client-side.
+- The DaisyUI auth forms use `<label><span class="label-text">` markup with no `for`/`id` association, so `getByLabel` finds nothing and fields are located by input type and order.
 
 ## Conventions
 

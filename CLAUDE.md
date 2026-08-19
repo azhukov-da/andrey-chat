@@ -17,17 +17,71 @@ See [BE/CLAUDE.md](BE/CLAUDE.md) and [FE/CLAUDE.md](FE/CLAUDE.md) for stack-spec
 
 To restart and wait for readiness, use the `restart` agent (see [.claude/agents/restart.md](.claude/agents/restart.md)) — it runs `start.bat` and polls `http://localhost:3000` on the escalating 10s → 30s → 60s → 120s schedule.
 
-Then **test**:
+Then **test** — see [Automated tests](#automated-tests) below for the full picture:
+- One command: `test.bat` runs all three gated layers plus both coverage reports.
 - Manual: open `http://localhost:3000`, sign up / sign in, exercise the affected flow.
-- Programmatic: drive the live site with Playwright (the `analyze` and `fix` agents do this against `http://localhost:3000`).
-- Frontend unit tests: `cd FE && npm test` (vitest).
 - Backend builds during the docker build of the `be` service; for local dev, see [BE/CLAUDE.md](BE/CLAUDE.md).
 
 Service URLs once up:
 
 - Frontend: `http://localhost:3000`
 - Backend (inside Docker network): `http://be:8080` — proxied by the FE nginx at `/api`, `/hubs`, `/login`, `/register`, `/refresh`, `/manage`, `/uploads` (see [FE/nginx.conf](FE/nginx.conf))
-- Postgres: container `db` on `5432` (no host port published)
+- Postgres: container `db` on `5432` (no host port published; `docker-compose.tests.yml` adds `55432` on the host for the test suite)
+
+> **Known collision:** because nginx proxies `/login` and `/register` to the backend's Identity endpoints, the SPA's own sign-in and registration screens 405 on direct navigation or a page refresh. They are only reachable by client-side routing from `/`. The e2e fixtures work around this — see [FE/e2e/fixtures.ts](FE/e2e/fixtures.ts).
+
+## Automated tests
+
+Behaviour is verified by three **gated layers**, each accountable for a different class of specified behaviour. The requirements for all of this live in the `automated-testing` capability — currently the delta spec at [openspec/changes/add-test-harness/specs/automated-testing/spec.md](openspec/changes/add-test-harness/specs/automated-testing/spec.md), which moves to `openspec/specs/automated-testing/spec.md` when that change is archived.
+
+| Layer | Where | Verifies | Run it |
+|---|---|---|---|
+| Backend integration | [BE/Tests.Integration/](BE/Tests.Integration/) | Server-enforced rules, through real HTTP and a real SignalR connection against a real PostgreSQL database with production migrations applied | `dotnet test BE/Tests.Integration/Tests.Integration.csproj` |
+| Frontend unit / component | [FE/src/](FE/src/) (`*.test.tsx`) | Client-enforced rules and rendering, through the component tree with the backend transports substituted | `cd FE && npm test` |
+| End-to-end | [FE/e2e/](FE/e2e/) | Cross-cutting flows only the assembled system can show, in a real browser against the running stack | `cd FE && npm run e2e` |
+
+A fourth layer, load and capacity, is specified but not yet built; it is deliberately outside the gated run.
+
+### Prerequisites per layer
+
+| Layer | Needs |
+|---|---|
+| Backend integration | PostgreSQL on `localhost:55432` — `docker compose -f docker-compose.yml -f docker-compose.tests.yml up -d db` |
+| Frontend unit | Nothing running. `cd FE && npm install` is enough. |
+| End-to-end | The whole stack serving on `http://localhost:3000` — `start.bat` |
+
+Each layer runs on its own without the others' prerequisites, and each fails fast with a message naming what to start. The port `55432` lives only in `docker-compose.tests.yml` so the base compose file keeps the database off the host, which is what the `platform-constraints` spec requires of the deployed topology.
+
+### Test data isolation
+
+The backend integration layer creates a database named `chat_test_<guid>` per xUnit collection, migrates it through the application's own startup path, truncates it between tests with Respawn, and drops it at the end. It never opens a connection to the development `chat` database. A run interrupted before cleanup leaves at most one database behind, and the next run reclaims anything older than 24 hours.
+
+The end-to-end layer is the exception, by design: it drives the developer's own stack and adds real accounts and rooms to the development database. Its users get generated identifiers so runs never collide; `docker compose down -v` resets things when the clutter matters.
+
+### Reports
+
+`test.bat` writes everything under `docs/test-coverage/`. Only `scenarios.md` is committed — it is the artefact worth reading in a diff, because it shows which specified scenarios gained or lost a test.
+
+| Report | Path |
+|---|---|
+| Scenario coverage (committed) | `docs/test-coverage/scenarios.md` |
+| Backend line coverage | `docs/test-coverage/backend/index.html` |
+| Frontend line coverage | `docs/test-coverage/frontend/index.html` |
+| End-to-end run | `docs/test-coverage/e2e-report/index.html` |
+| Raw machine-readable results | `docs/test-coverage/raw/` |
+
+### The two gates
+
+They measure different things and are tracked separately.
+
+- **Scenario coverage** — [tools/spec-coverage](tools/spec-coverage/) parses `openspec/specs/**/spec.md` into scenario identifiers and cross-references them against the tests that claim them. It says *what is left to test*. It does not gate on percentage, but it **does** fail the run when a test claims an identifier no scenario matches, which is how a renamed or misspelled scenario surfaces.
+- **Line coverage** — [tools/coverage-gate](tools/coverage-gate/) compares backend and frontend line coverage against 80%. It currently **reports** the shortfall without failing; `test.bat` calls it without `--enforce` because only `user-sessions` has tests so far, and failing on coverage would bury real test failures. Turning the gate on is adding that one flag.
+
+### Declaring what a test verifies
+
+Every test names the scenarios it verifies by putting `@spec:<capability>/<requirement-slug>/<scenario-slug>` in its **display name**. The identifier is derived from the spec headings — lowercased, non-alphanumerics collapsed to dashes — so it cannot drift from the specs. See [docs/testing-conventions.md](docs/testing-conventions.md) for the per-layer syntax.
+
+Only a **passing** test counts as covering its claims; a failing or skipped one is reported as claimed-but-not-passing.
 
 ## Frontend ↔ Backend interface
 

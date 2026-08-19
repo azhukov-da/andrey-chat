@@ -1,0 +1,9 @@
+{
+  "name": "spec-coverage",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Maps specified scenarios in openspec/specs to the tests that verify them.",
+  "main": "index.mjs",
+  "bin": { "spec-coverage": "index.mjs" }
+}

@@ -2,7 +2,12 @@
   "mcpServers": {
     "playwright": {
       "command": "npx",
-      "args": ["@playwright/mcp@latest"]
+      "args": [
+        "@playwright/mcp@latest"
+      ]
     }
+  },
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true
   }
 }
