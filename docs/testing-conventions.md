@@ -142,4 +142,19 @@ test that did not pass", which is more useful than showing the scenario as untes
   test by name. Drive server pushes with `fakeHub.emit(event, payload)` after
   `vi.mock('@/realtime/hubClient', () => import('@/test/fakeHubClient'))`.
 - **End-to-end** — take the `signedIn` fixture for one user or `twoUsers` for two independent browser
-  contexts. Each fixture registers a fresh account with a generated identifier.
+  contexts. Each fixture registers a fresh account with a generated identifier. The helpers in
+  `e2e/fixtures.ts` cover what these tests keep needing:
+
+  | Helper | What it does |
+  |---|---|
+  | `signIn(page, account, { keepSignedIn })` | Signs in through the real screen; the option ticks "Keep me signed in", which is what decides whether the refresh token goes to `localStorage` or `sessionStorage` |
+  | `reopenBrowser(user, browser)` | Closes the context and opens a new one from its `storageState` — a real browser restart, since `storageState` carries `localStorage` but not `sessionStorage` |
+  | `createRoom(page, name)` / `joinRoom(page, name)` | Drive the room UI and return the room id. Deliberately not seeded over HTTP: seeding through the API would skip the proxy path these tests exist to exercise |
+  | `recordRequests(page)` | Collects every URL the page contacts, HTTP and WebSocket, for the transport-boundary requirement |
+
+  Two things about the running stack are worth knowing before writing a test against it. The hub
+  falls back to long polling — the WebSocket upgrade does not complete through the deployed nginx —
+  so a reconnect opens no new socket and is observed through `/hubs/chat/negotiate` instead. And
+  `withAutomaticReconnect([0, 1000, 2000, 5000, 10000])` gives up permanently once its five delays
+  are spent, so an induced outage has to be shorter than about eighteen seconds for the client to
+  come back at all.
